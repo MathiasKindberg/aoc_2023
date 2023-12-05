@@ -1,3 +1,5 @@
+/// Part 1: 55108
+/// Part 2:
 use std::io::BufRead;
 
 fn input() -> Vec<Vec<u32>> {
@@ -8,30 +10,26 @@ fn input() -> Vec<Vec<u32>> {
         .map_while(Result::ok)
         .map(|line| {
             line.chars()
-                .filter(|char| char.is_ascii_digit())
                 .filter_map(|digit| digit.to_digit(10))
-                .collect()
+                .collect::<Vec<u32>>()
         })
         .collect()
 }
 
-fn one(input: &Vec<Vec<u32>>) {
-    let mut sum = 0;
-    for row in input {
-        let Some(first) = row.first().cloned() else {
-            continue;
-        };
-        let Some(last) = row.last().cloned() else {
-            continue;
-        };
-
-        let num = last + (10 * first);
-        sum += num;
-    }
+fn one(input: &[Vec<u32>]) {
+    let sum: u32 = input
+        .iter()
+        .filter(|line| !line.is_empty())
+        // SAFETY: We filter empty lines and thus first and last must exist.
+        .map(|line| line.last().unwrap() + (10 * line.first().unwrap()))
+        .sum();
     println!("One: {sum}");
 }
+
+fn two(_input: &[Vec<u32>]) {}
 
 fn main() {
     let input = input();
     one(&input);
+    two(&input);
 }
