@@ -1,6 +1,9 @@
-/// Part 1: 55108
-/// Part 2: 56324
+//! Part 1: 55108
+//! Part 2: 56324
+
+use std::collections::HashMap;
 use std::io::BufRead;
+use std::sync::OnceLock;
 
 fn input() -> Vec<String> {
     let stdin = std::io::stdin();
@@ -22,9 +25,6 @@ fn one(input: &[String]) {
         .sum();
     println!("One: {sum} | Elapsed: {:?}", now.elapsed());
 }
-
-use std::collections::HashMap;
-use std::sync::OnceLock;
 
 fn lookup_table() -> &'static HashMap<&'static str, u64> {
     static HASHMAP: OnceLock<HashMap<&str, u64>> = OnceLock::new();
