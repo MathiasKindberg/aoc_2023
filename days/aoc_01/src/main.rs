@@ -21,7 +21,7 @@ fn one(input: &[String]) {
         })
         .filter(|line| !line.is_empty())
         // SAFETY: We filter empty lines and thus first and last must exist.
-        .map(|line| line.last().unwrap() + (10 * line.first().unwrap()))
+        .map(|line| (10 * line.first().unwrap()) + line.last().unwrap())
         .sum();
     println!("One: {sum} | Elapsed: {:?}", now.elapsed());
 }
@@ -62,8 +62,8 @@ fn get_digit(row: &str) -> Option<u64> {
     found_digits.sort_by(|(idx_a, _), (idx_b, _)| idx_a.cmp(idx_b));
 
     Some(
-        lookup_table().get(found_digits.last()?.1)?
-            + (10 * lookup_table().get(found_digits.first()?.1)?),
+        (10 * lookup_table().get(found_digits.first()?.1)?
+            + lookup_table().get(found_digits.last()?.1)?),
     )
 }
 
