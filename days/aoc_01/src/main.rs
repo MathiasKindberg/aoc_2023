@@ -53,11 +53,10 @@ const LOOKUP_TABLE: &[(&str, u64)] = &[
     ("nine", 9),
 ];
 
-fn get_digit(row: &String) -> Option<u64> {
+fn get_digit(row: &str) -> Option<u64> {
     let mut found_digits: Vec<_> = lookup_table()
         .iter()
-        .map(|(num, _)| row.match_indices(num))
-        .flatten()
+        .flat_map(|(num, _)| row.match_indices(num))
         .collect();
 
     found_digits.sort_by(|(idx_a, _), (idx_b, _)| idx_a.cmp(idx_b));
