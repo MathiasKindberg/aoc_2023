@@ -1,0 +1,4 @@
+[workspace]
+members = ["days/*"]
+resolver = "2"
+# For inspiration see for example rust-analyzer (https://github.com/rust-analyzer/rust-analyzer) and Facebook Diem (https://github.com/diem/diem)
