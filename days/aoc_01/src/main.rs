@@ -61,10 +61,6 @@ fn get_digit(row: &str) -> Option<u64> {
 
     found_digits.sort_by(|(idx_a, _), (idx_b, _)| idx_a.cmp(idx_b));
 
-    if found_digits.is_empty() {
-        return None;
-    }
-
     Some(
         lookup_table().get(found_digits.last()?.1)?
             + (10 * lookup_table().get(found_digits.first()?.1)?),
