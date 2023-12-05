@@ -6,10 +6,7 @@ fn input() -> Vec<String> {
         .lock()
         .lines()
         .into_iter()
-        .filter_map(|line| {
-            println!("{line:?}");
-            line.ok()
-        })
+        .filter_map(|line| line.ok())
         .collect()
 }
 
