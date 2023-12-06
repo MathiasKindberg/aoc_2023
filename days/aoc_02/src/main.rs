@@ -1,5 +1,5 @@
 //! One: 2505
-//! Two:
+//! Two: 70265
 
 use std::collections::HashMap;
 use std::io::BufRead;
@@ -20,6 +20,7 @@ const LOOKUP_TABLE: &[(&str, u64)] = &[("red", 12), ("green", 13), ("blue", 14)]
 
 fn one(input: &[String]) {
     use itertools::Itertools;
+
     let now = std::time::Instant::now();
     let sum: u64 = input
         .iter()
@@ -27,7 +28,7 @@ fn one(input: &[String]) {
         .map(|(game_id, games)| {
             (
                 game_id.trim_start_matches("Game ").parse::<u64>().unwrap(),
-                games.replace(";", ","),
+                games.replace(';', ","),
             )
         })
         .filter_map(|(game_id, set)| {
@@ -45,7 +46,36 @@ fn one(input: &[String]) {
 
     println!("One: {sum} | Elapsed: {:?}", now.elapsed());
 }
-fn two(_input: &[String]) {}
+
+fn two(input: &[String]) {
+    let now = std::time::Instant::now();
+    let sum: u64 = input
+        .iter()
+        .map(|row| row.split(": ").skip(1).last().unwrap())
+        .map(|game| game.replace(';', ","))
+        .map(|game| {
+            let mut min_of_each_color = HashMap::with_capacity(3);
+            for cube in game.split(", ") {
+                let cube = cube.split(' ').collect::<Vec<_>>();
+                let (num, color) = (cube[0].parse::<u64>().unwrap(), cube[1]);
+
+                min_of_each_color
+                    .entry(color)
+                    .and_modify(|val: &mut u64| *val = std::cmp::max(*val, num))
+                    .or_insert(num);
+            }
+            min_of_each_color
+                .iter()
+                .fold(None, |acc, (_, value)| match acc {
+                    Some(acc) => Some(acc * value),
+                    None => Some(*value),
+                })
+                .unwrap()
+        })
+        .sum();
+
+    println!("Two: {sum} | Elapsed: {:?}", now.elapsed());
+}
 
 fn main() {
     let input = input();
