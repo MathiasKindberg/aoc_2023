@@ -1,3 +1,6 @@
+//! One: 2505
+//! Two:
+
 use std::collections::HashMap;
 use std::io::BufRead;
 use std::sync::OnceLock;
@@ -16,27 +19,30 @@ fn lookup_table() -> &'static HashMap<&'static str, u64> {
 const LOOKUP_TABLE: &[(&str, u64)] = &[("red", 12), ("green", 13), ("blue", 14)];
 
 fn one(input: &[String]) {
+    use itertools::Itertools;
     let now = std::time::Instant::now();
     let sum: u64 = input
         .iter()
-        .map(|row| row.split(": ").collect::<Vec<_>>())
-        .filter_map(|row| {
-            let game_id = row[0].trim_start_matches("Game ").parse::<u64>().unwrap();
-            let sets = row[1].split("; ").collect::<Vec<_>>();
-            for set in &sets {
-                let cubes = set.split(", ").collect::<Vec<_>>();
-                for cube in cubes {
-                    let cube = cube.split(' ').collect::<Vec<_>>();
-                    let (num, color) = (cube[0].parse::<u64>().unwrap(), cube[1]);
-
-                    if num > *lookup_table().get(color).unwrap() {
-                        return None;
-                    }
+        .map(|row| row.split(": ").collect_tuple().unwrap())
+        .map(|(game_id, games)| {
+            (
+                game_id.trim_start_matches("Game ").parse::<u64>().unwrap(),
+                games.replace(";", ","),
+            )
+        })
+        .filter_map(|(game_id, set)| {
+            let set = set.split(", ").collect::<Vec<_>>();
+            for cube in set {
+                let cube = cube.split(' ').collect::<Vec<_>>();
+                let (num, color) = (cube[0].parse::<u64>().unwrap(), cube[1]);
+                if num > *lookup_table().get(color).unwrap() {
+                    return None;
                 }
             }
             Some(game_id)
         })
         .sum();
+
     println!("One: {sum} | Elapsed: {:?}", now.elapsed());
 }
 fn two(_input: &[String]) {}
