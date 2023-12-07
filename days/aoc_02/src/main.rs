@@ -54,17 +54,17 @@ fn two(input: &[String]) {
         .map(|row| row.split(": ").skip(1).last().unwrap())
         .map(|game| game.replace(';', ","))
         .map(|game| {
-            let mut min_of_each_color = HashMap::with_capacity(3);
+            let mut max_of_each_color = HashMap::with_capacity(3);
             for cube in game.split(", ") {
                 let cube = cube.split(' ').collect::<Vec<_>>();
                 let (num, color) = (cube[0].parse::<u64>().unwrap(), cube[1]);
 
-                min_of_each_color
+                max_of_each_color
                     .entry(color)
                     .and_modify(|val: &mut u64| *val = std::cmp::max(*val, num))
                     .or_insert(num);
             }
-            min_of_each_color
+            max_of_each_color
                 .iter()
                 .fold(None, |acc, (_, value)| match acc {
                     Some(acc) => Some(acc * value),
