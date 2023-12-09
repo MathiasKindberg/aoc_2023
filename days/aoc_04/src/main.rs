@@ -8,12 +8,10 @@ fn input() -> Vec<String> {
     stdin.lock().lines().map_while(Result::ok).collect()
 }
 
-fn one(input: &[String]) {
+fn process_input(input: &[String]) -> Vec<(HashSet<u64>, Vec<u64>)> {
     use itertools::Itertools;
 
-    let now = std::time::Instant::now();
-
-    let input: Vec<(HashSet<u64>, Vec<u64>)> = input
+    input
         .iter()
         .map(|row| row.split(": ").collect_tuple().unwrap())
         .map(|(_, input)| input.split(" | ").collect_tuple().unwrap())
@@ -28,7 +26,13 @@ fn one(input: &[String]) {
                     .collect(),
             )
         })
-        .collect();
+        .collect()
+}
+
+fn one(input: &[String]) {
+    let now = std::time::Instant::now();
+
+    let input = process_input(input);
 
     let sum: u64 = input
         .iter()
@@ -50,37 +54,14 @@ fn one(input: &[String]) {
 
     println!("One: {sum} | Elapsed: {:?}", now.elapsed());
 }
+
 fn two(input: &[String]) {
-    use itertools::Itertools;
-
     let now = std::time::Instant::now();
-
-    let mut copies = vec![1; input.len()];
-
-    let input: Vec<(HashSet<u64>, Vec<u64>)> = input
-        .iter()
-        .map(|row| row.split(": ").collect_tuple().unwrap())
-        .map(|(_, input)| input.split(" | ").collect_tuple().unwrap())
-        .map(|(winning, your): (&str, &str)| {
-            (
-                winning
-                    .split_ascii_whitespace()
-                    .filter_map(|num| num.parse().ok())
-                    .collect(),
-                your.split_ascii_whitespace()
-                    .filter_map(|num| num.parse().ok())
-                    .collect(),
-            )
-        })
-        .collect();
+    let input = process_input(input);
+    let mut copies: Vec<u64> = vec![1; input.len()];
 
     for (idx, (winning, yours)) in input.iter().enumerate() {
-        let matching: usize = yours
-            .iter()
-            .filter(|num| winning.contains(num))
-            .count()
-            .try_into()
-            .unwrap();
+        let matching = yours.iter().filter(|num| winning.contains(num)).count();
 
         for copies_idx in 1..=matching {
             copies[idx + copies_idx] += copies[idx];
@@ -93,7 +74,6 @@ fn two(input: &[String]) {
 
 fn main() {
     let input = input();
-    // println!("{input:#?}");
     one(&input);
     two(&input);
 }
