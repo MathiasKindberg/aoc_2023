@@ -57,7 +57,7 @@ fn one(input: &[Vec<char>]) {
 
         for (x, char) in row[1..(row.len())].iter().enumerate() {
             if char.is_ascii_digit() {
-                if adjacent_symbol(x + PADDING, y + PADDING, &input) && !has_adjacent_symbol {
+                if !has_adjacent_symbol && adjacent_symbol(x + PADDING, y + PADDING, &input) {
                     has_adjacent_symbol = true
                 }
                 let digit: u64 = char.to_digit(10).unwrap().into();
