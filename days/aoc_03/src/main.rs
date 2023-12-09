@@ -1,3 +1,6 @@
+//! One: 525911
+//! Two:
+
 use std::io::BufRead;
 
 fn input() -> Vec<Vec<char>> {
@@ -13,6 +16,8 @@ fn input() -> Vec<Vec<char>> {
 /// Adds a padding layer of dots around the schematic ensuring
 /// we do not have to deal with the edges.
 fn pad_input(mut input: Vec<Vec<char>>) -> Vec<Vec<char>> {
+    assert!(!input.is_empty(), "Expected input");
+
     for row in input.iter_mut() {
         row.insert(0, '.');
         row.push('.')
@@ -29,21 +34,14 @@ fn pad_input(mut input: Vec<Vec<char>>) -> Vec<Vec<char>> {
 /// `.X.`
 /// `...`
 fn adjacent_symbol(x: usize, y: usize, input: &[Vec<char>]) -> bool {
-    for y in (y - 1)..=(y + 1) {
-        for x in (x - 1)..=(x + 1) {
-            let symbol = &input[y][x];
+    for row in input.iter().skip(y - 1).take(3) {
+        for symbol in row.iter().skip(x - 1).take(3) {
             if !symbol.is_ascii_digit() && symbol != &'.' {
                 return true;
             }
         }
     }
     false
-}
-
-#[derive(Debug)]
-enum Part {
-    Y(u64),
-    N(u64),
 }
 
 fn one(input: &[Vec<char>]) {
@@ -53,31 +51,26 @@ fn one(input: &[Vec<char>]) {
     let input = pad_input(input.to_owned());
     let mut sum = 0;
 
-    for (y, row) in (&input[1..(input.len() - 1)]).iter().enumerate() {
+    for (y, row) in input[1..(input.len() - 1)].iter().enumerate() {
         let mut num: u64 = 0;
         let mut has_adjacent_symbol = false;
-        let mut found_nums = vec![];
-        for (x, char) in (&row[1..(row.len() - 1)]).iter().enumerate() {
+
+        for (x, char) in row[1..(row.len())].iter().enumerate() {
             if char.is_ascii_digit() {
-                if adjacent_symbol(x + PADDING, y + PADDING, &input) {
+                if adjacent_symbol(x + PADDING, y + PADDING, &input) && !has_adjacent_symbol {
                     has_adjacent_symbol = true
                 }
                 let digit: u64 = char.to_digit(10).unwrap().into();
                 num = num * 10 + digit;
             } else {
                 if has_adjacent_symbol {
-                    found_nums.push(Part::Y(num));
                     sum += num;
-                } else {
-                    if num != 0 {
-                        found_nums.push(Part::N(num));
-                    }
                 }
+
                 has_adjacent_symbol = false;
                 num = 0;
             }
         }
-        println!("{found_nums:?}");
     }
 
     println!("One: {sum} | Elapsed: {:?}", now.elapsed());
