@@ -1,5 +1,5 @@
 //! Part 1: 25651
-//! Part 2:
+//! Part 2: 19499881
 
 use std::{collections::HashSet, io::BufRead};
 
@@ -55,6 +55,8 @@ fn two(input: &[String]) {
 
     let now = std::time::Instant::now();
 
+    let mut copies = vec![1; input.len()];
+
     let input: Vec<(HashSet<u64>, Vec<u64>)> = input
         .iter()
         .map(|row| row.split(": ").collect_tuple().unwrap())
@@ -72,23 +74,20 @@ fn two(input: &[String]) {
         })
         .collect();
 
-    let sum: u64 = input
-        .iter()
-        .filter_map(|(winning, yours)| {
-            let matching: u32 = yours
-                .iter()
-                .filter(|num| winning.contains(num))
-                .count()
-                .try_into()
-                .unwrap();
+    for (idx, (winning, yours)) in input.iter().enumerate() {
+        let matching: usize = yours
+            .iter()
+            .filter(|num| winning.contains(num))
+            .count()
+            .try_into()
+            .unwrap();
 
-            match matching {
-                1.. => Some(matching),
-                _ => None,
-            }
-        })
-        .map(|matching| 2_u64.pow(matching - 1))
-        .sum();
+        for copies_idx in 1..=matching {
+            copies[idx + copies_idx] += copies[idx];
+        }
+    }
+
+    let sum: u64 = copies.iter().sum();
     println!("Two: {sum} | Elapsed: {:?}", now.elapsed());
 }
 
