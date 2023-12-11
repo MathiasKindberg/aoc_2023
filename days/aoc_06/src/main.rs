@@ -28,14 +28,14 @@ fn one(input: &[String]) {
         .collect();
 
     let res = input.iter().fold(0, |mut acc, (time, distance)| {
-        let root = f64::sqrt(((time.powi(2) / 4.0) - distance));
+        let root = f64::sqrt((time.powi(2) / 4.0) - distance);
         let x1 = ((time / 2.0) - root).ceil();
         let x2 = ((time / 2.0) + root).floor();
         let num = (x2 - x1) + 1.0; // Add one to get how many numbers are in the range x1..=x2
         if acc == 0 {
             acc = num as u64
         } else {
-            acc = acc * (num as u64)
+            acc *= num as u64
         }
         acc
     });
