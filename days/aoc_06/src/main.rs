@@ -11,7 +11,6 @@ fn input() -> Vec<String> {
 fn one(input: &[String]) {
     let now = std::time::Instant::now();
 
-    println!("{input:?}");
     let times = input[0]
         .trim_start_matches("Time:")
         .trim()
@@ -45,11 +44,29 @@ fn one(input: &[String]) {
 
     println!("One: {res} | Elapsed: {:?}", now.elapsed());
 }
-fn two(_input: &[String]) {
-    let now = std::time::Instant::now();
-    let sum = 0;
 
-    println!("Two: {sum} | Elapsed: {:?}", now.elapsed());
+fn two(input: &[String]) {
+    let now = std::time::Instant::now();
+
+    let time = input[0]
+        .trim_start_matches("Time:")
+        .replace(' ', "")
+        .parse::<u64>()
+        .unwrap() as f64;
+
+    let distance = input[1]
+        .trim_start_matches("Distance:")
+        .replace(' ', "")
+        .parse::<u64>()
+        .unwrap() as f64
+        + 1.0;
+
+    let root = f64::sqrt((time.powi(2) / 4.0) - distance);
+    let x1 = ((time / 2.0) - root).ceil();
+    let x2 = ((time / 2.0) + root).floor();
+    let res = (x2 - x1) + 1.0; // Add one to get how many numbers are in the range x1..=x2
+
+    println!("Two: {res} | Elapsed: {:?}", now.elapsed());
 }
 
 fn main() {
