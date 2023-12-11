@@ -1,3 +1,6 @@
+//! Part 1:
+//! Part 2:
+
 use std::io::BufRead;
 
 fn input() -> Vec<String> {
