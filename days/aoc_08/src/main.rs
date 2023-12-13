@@ -1,4 +1,4 @@
-//! Part 1:
+//! Part 1: 11309
 //! Part 2:
 
 use std::{collections::HashMap, io::BufRead};
@@ -31,8 +31,6 @@ fn one(input: &[String]) {
     const FINISH_NODE: &str = "ZZZ";
 
     let now = std::time::Instant::now();
-    let _sum = 0;
-
     let movement: Vec<_> = input[0].chars().collect();
 
     let map: HashMap<_, _> = input[2..]
@@ -67,15 +65,50 @@ fn one(input: &[String]) {
 
     println!("One: {steps} | Elapsed: {:?}", now.elapsed());
 }
-fn two(_input: &[String]) {
-    let now = std::time::Instant::now();
-    let sum = 0;
+fn two(input: &[String]) {
+    use itertools::Itertools;
 
-    println!("Two: {sum} | Elapsed: {:?}", now.elapsed());
+    const START_NODE: &str = "AAA";
+    const FINISH_NODE: &str = "ZZZ";
+
+    let now = std::time::Instant::now();
+    let movement: Vec<_> = input[0].chars().collect();
+
+    let map: HashMap<_, _> = input[2..]
+        .iter()
+        .map(|row| row.split(" = ").collect_tuple().unwrap())
+        .map(|(source, destination)| {
+            let cleaned_input = destination.replace(['(', ')', ','], "");
+            let (left, right) = cleaned_input
+                .split_ascii_whitespace()
+                .collect_tuple()
+                .unwrap();
+            (
+                source.to_owned(),
+                Destination {
+                    left: left.to_owned(),
+                    right: right.to_owned(),
+                },
+            )
+        })
+        .collect();
+
+    let mut steps = 0;
+    let mut node = map.get(START_NODE).unwrap();
+    for movement in movement.iter().cycle() {
+        steps += 1;
+        let next = node.next(movement);
+        if next == FINISH_NODE {
+            break;
+        }
+        node = map.get(next).unwrap();
+    }
+
+    println!("Two: {steps} | Elapsed: {:?}", now.elapsed());
 }
 
 fn main() {
     let input = input();
-    one(&input);
+    // one(&input);
     two(&input);
 }
