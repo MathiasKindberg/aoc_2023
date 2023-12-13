@@ -1,6 +1,5 @@
 //! Part 1: 251287184
-//! Part 2:
-//!
+//! Part 2: 250757288
 
 // Split the parts into different functions since we rely on the ordering in the
 // enums for sorting which means tons of repetition....
