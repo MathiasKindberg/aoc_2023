@@ -1,5 +1,5 @@
 use core::panic;
-use std::{collections::HashMap, io::BufRead};
+use std::collections::HashMap;
 
 #[derive(Debug, PartialEq, PartialOrd, Eq, Ord, Hash, Copy, Clone)]
 enum Card {
@@ -116,7 +116,7 @@ fn count_matching_cards(hand: &[Card]) -> Vec<(Card, usize)> {
             } else if b_card == &Card::J {
                 std::cmp::Ordering::Less
             } else {
-                b_num.cmp(&a_num)
+                b_num.cmp(a_num)
             }
         });
     }
@@ -129,16 +129,14 @@ pub(crate) fn two(input: &[String]) {
 
     let now = std::time::Instant::now();
 
-    let mut iter = 0;
+    let _iter = 0;
 
     let mut input: Vec<(Vec<Card>, usize, Type)> = input
         .iter()
         .map(|row| row.split_ascii_whitespace().collect_tuple().unwrap())
         .map(|(hand, bid): (&str, &str)| {
             (
-                hand.chars()
-                    .map(|card| Card::from_char(card))
-                    .collect::<Vec<_>>(),
+                hand.chars().map(Card::from_char).collect::<Vec<_>>(),
                 bid.parse::<usize>().unwrap(),
             )
         })

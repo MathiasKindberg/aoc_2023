@@ -1,4 +1,4 @@
-use std::{collections::HashMap, io::BufRead};
+use std::collections::HashMap;
 
 #[derive(Debug, PartialEq, PartialOrd, Eq, Ord, Hash, Copy, Clone)]
 enum Card {
@@ -98,9 +98,7 @@ pub(crate) fn one(input: &[String]) {
         .map(|row| row.split_ascii_whitespace().collect_tuple().unwrap())
         .map(|(hand, bid): (&str, &str)| {
             (
-                hand.chars()
-                    .map(|card| Card::from_char(card))
-                    .collect::<Vec<_>>(),
+                hand.chars().map(Card::from_char).collect::<Vec<_>>(),
                 bid.parse::<usize>().unwrap(),
             )
         })

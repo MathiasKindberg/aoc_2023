@@ -6,7 +6,7 @@
 mod part_1;
 mod part_2;
 
-use std::{collections::HashMap, io::BufRead};
+use std::io::BufRead;
 
 fn input() -> Vec<String> {
     let stdin = std::io::stdin();
