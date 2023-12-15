@@ -1,7 +1,7 @@
 //! Part 1:
 //! Part 2:
 
-use std::io::BufRead;
+use std::{io::BufRead, thread::current};
 
 fn input() -> Vec<Vec<char>> {
     let stdin = std::io::stdin();
@@ -162,9 +162,13 @@ fn one(input: &[Vec<char>]) {
         println!("")
     }
 
-    let mut position = starting_position.expect("one to exist");
+    let (mut row_idx, mut char_idx) = starting_position.expect("one to exist");
+    // To prevent us moving backwards
+    let (mut last_row_idx, mut last_char_idx) = (row_idx, char_idx);
     let mut steps = 0;
-    loop {}
+    loop {
+        // looop
+    }
     dbg!(&starting_position);
     // Depth first search
 
