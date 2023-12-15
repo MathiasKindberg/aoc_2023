@@ -13,20 +13,37 @@ fn input() -> Vec<Vec<char>> {
         .collect()
 }
 
+/// Adds a padding layer of dots around the schematic ensuring
+/// we do not have to deal with the edges.
+fn pad_input(mut input: Vec<Vec<char>>) -> Vec<Vec<char>> {
+    assert!(!input.is_empty(), "Expected input");
+
+    for row in input.iter_mut() {
+        row.insert(0, '.');
+        row.push('.')
+    }
+
+    let top_bottom_padding: Vec<_> = ".".repeat(input[0].len()).chars().collect();
+    input.insert(0, top_bottom_padding.clone());
+    input.push(top_bottom_padding);
+
+    input
+}
+
 #[derive(Debug)]
 struct Node {
-    id: usize,
+    id: (usize, usize),
     symbol: char,
 
     // Connections:
-    north: Option<usize>,
-    south: Option<usize>,
-    west: Option<usize>,
-    east: Option<usize>,
+    north: Option<(usize, usize)>,
+    south: Option<(usize, usize)>,
+    west: Option<(usize, usize)>,
+    east: Option<(usize, usize)>,
 }
 
 impl Node {
-    fn new(id: usize, symbol: char) -> Self {
+    fn new(id: (usize, usize), symbol: char) -> Self {
         Self {
             id,
             symbol,
@@ -38,67 +55,87 @@ impl Node {
     }
 }
 
-enum Direction {
-    NorthSouth,
-    EastWest,
-}
+fn north_south(northern: char, southern: char) -> bool {
+    // We only need to specify the valid directions
+    match (northern, southern) {
+        // Straights
+        ('|', '|') => true,
 
-fn check_compatability(a: char, b: char, direction: Direction) -> bool {
-    match direction {
-        Direction::NorthSouth => north_south(a, b),
-        Direction::EastWest => east_west(a, b),
+        // Curves
+        // Up -> Down -> Right/Left
+        ('|', 'L') => true,
+        ('|', 'J') => true,
+
+        // Down -> Up -> Right/Left
+        ('7', '|') => true,
+        ('F', '|') => true,
+
+        // Rest
+        (_, _) => false,
     }
 }
 
-fn north_south(a: char, b: char) -> bool {
-    match (a, b) {
-        // Ground with anything
-        (a, '.') => false,
-        ('.', b) => false,
+fn west_east(western: char, eastern: char) -> bool {
+    // We only need to specify the valid directions
+    match (western, eastern) {
+        // Straights
+        ('-', '-') => true,
 
-        (a, b) => unreachable!("Unknown connection type"),
+        // Curves
+        // Right -> Up/Down
+        ('-', '7') => true,
+        ('-', 'J') => true,
+
+        // Down -> Up -> Right/Left
+        ('L', '-') => true,
+        ('F', '-') => true,
+
+        // Rest
+        (_, _) => false,
     }
-}
-
-fn east_west(a: char, b: char) -> bool {
-    false
 }
 
 fn one(input: &[Vec<char>]) {
+    const PADDING: usize = 1;
+
     let now = std::time::Instant::now();
     let sum = 0;
-    let row_len = input[0].len();
-    let start_node = 0;
-    let mut map = Vec::with_capacity(input.len() * row_len);
+    let input = pad_input(input.to_vec());
+    let mut map: Vec<Vec<Node>> = Vec::with_capacity(input.len());
 
     // Build map so we can reference all other nodes while creating the connections.
-    for row in input {
-        for c in row {
-            map.push(Node::new(map.len() + 1, *c));
-        }
-    }
-
-    // Build connections
     for (row_idx, row) in input.iter().enumerate() {
-        let row_idx = row_idx * row_len;
-        for (char_idx, c) in row.iter().enumerate() {
-            let idx = row_idx + char_idx;
-            // match c {
-            //     // Do nothing
-            //     &'.' | 'S' => (),
-
-            //     // Connect North <-> South
-            //     &'|' => {
-            //         let north = map[idx - row_len];
-            //         let south = map[idx + row_len];
-            //     }
-
-            //     err => unreachable!("Unknown charachter: `{err}`"),
-            // }
-        }
+        map.push(
+            row.iter()
+                .enumerate()
+                .map(|(char_idx, c)| Node::new((row_idx, char_idx), *c))
+                .collect(),
+        );
     }
 
-    println!("{:?}", map[7]);
+    // Build connections.
+    // TODO We could do this together with initializing the map since we only go up and left. But whatever.
+    for row_idx in 1..(map.len() - 1) {
+        for char_idx in 1..(map[row_idx].len() - 1) {
+            print!("{}", &map[row_idx][char_idx].symbol);
+            if north_south(
+                map[row_idx - 1][char_idx].symbol,
+                map[row_idx][char_idx].symbol,
+            ) {
+                map[row_idx - 1][char_idx].south = Some((row_idx, char_idx));
+                map[row_idx][char_idx].north = Some((row_idx - 1, char_idx));
+            }
+
+            if west_east(
+                map[row_idx][char_idx - 1].symbol,
+                map[row_idx][char_idx].symbol,
+            ) {
+                map[row_idx][char_idx - 1].east = Some((row_idx, char_idx));
+                map[row_idx][char_idx].west = Some((row_idx, char_idx - 1));
+            }
+        }
+        println!("")
+    }
 
     println!("One: {sum} | Elapsed: {:?}", now.elapsed());
 }
@@ -119,9 +156,23 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use pretty_assertions::assert_eq;
 
     #[test]
     fn north_south_connections() {
-        assert!(!north_south('.', '|'))
+        let test_table = [
+            // Straights
+            ('|', '|', true),
+            ('|', '-', false),
+            ('-', '|', false),
+            ('-', '-', false),
+            // To ground
+            ('.', '|', false),
+            ('|', '.', false),
+        ];
+
+        for (a, b, res) in test_table {
+            assert_eq!(north_south(a, b), res);
+        }
     }
 }
