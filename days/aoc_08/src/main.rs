@@ -93,17 +93,16 @@ fn two(input: &[String]) {
         })
         .collect();
 
-    let mut start_nodes: Vec<_> = map.keys().filter(|node| node.ends_with('A')).collect();
-
-    let mut nodes: Vec<_> = start_nodes
-        .iter()
-        .map(|node| (map.get(*node).unwrap(), None, None))
+    let mut nodes: Vec<_> = map
+        .keys()
+        .filter(|node| node.ends_with('A'))
+        .map(|node| (map.get(node).unwrap(), None, None))
         .collect();
 
     let mut steps: usize = 0;
     let mut finished_nodes = 0;
 
-    for (idx, movement) in movement.iter().cycle().enumerate() {
+    for movement in movement.iter().cycle() {
         steps += 1;
 
         // Could be cleaned up, but good enough.
@@ -112,7 +111,7 @@ fn two(input: &[String]) {
                 let next = node.next(movement);
                 *node = map.get(next).unwrap();
 
-                if next.ends_with("Z") {
+                if next.ends_with('Z') {
                     *found_z = Some(next);
                     *steps_to_z = Some(steps);
                     finished_nodes += 1;
