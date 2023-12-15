@@ -35,11 +35,12 @@ struct Node {
     id: (usize, usize),
     symbol: char,
 
-    // Connections:
-    north: Option<(usize, usize)>,
-    south: Option<(usize, usize)>,
-    west: Option<(usize, usize)>,
-    east: Option<(usize, usize)>,
+    connections: Vec<(usize, usize)>,
+    // // Connections:
+    // north: Option<(usize, usize)>,
+    // south: Option<(usize, usize)>,
+    // west: Option<(usize, usize)>,
+    // east: Option<(usize, usize)>,
 }
 
 impl Node {
@@ -47,11 +48,12 @@ impl Node {
         Self {
             id,
             symbol,
-            north: None,
-            south: None,
-            west: None,
-            east: None,
+            connections: Vec::new(),
         }
+    }
+
+    fn add_connection(&mut self, id: (usize, usize)) {
+        self.connections.push(id)
     }
 }
 
@@ -69,6 +71,15 @@ fn north_south(northern: char, southern: char) -> bool {
         // Down -> Up -> Right/Left
         ('7', '|') => true,
         ('F', '|') => true,
+
+        // Starting position
+        ('S', '|') => true,
+        ('|', 'S') => true,
+
+        ('S', 'L') => true,
+        ('S', 'J') => true,
+        ('7', 'S') => true,
+        ('F', 'S') => true,
 
         // Rest
         (_, _) => false,
@@ -90,6 +101,15 @@ fn west_east(western: char, eastern: char) -> bool {
         ('L', '-') => true,
         ('F', '-') => true,
 
+        // Starting position
+        ('S', '-') => true,
+        ('-', 'S') => true,
+
+        ('S', 'J') => true,
+        ('S', '7') => true,
+        ('L', 'S') => true,
+        ('F', 'S') => true,
+
         // Rest
         (_, _) => false,
     }
@@ -101,8 +121,9 @@ fn one(input: &[Vec<char>]) {
     let now = std::time::Instant::now();
     let sum = 0;
     let input = pad_input(input.to_vec());
-    let mut map: Vec<Vec<Node>> = Vec::with_capacity(input.len());
 
+    // TODO: We can skip building the map and instead find connections as we go....
+    let mut map: Vec<Vec<Node>> = Vec::with_capacity(input.len());
     // Build map so we can reference all other nodes while creating the connections.
     for (row_idx, row) in input.iter().enumerate() {
         map.push(
@@ -114,28 +135,38 @@ fn one(input: &[Vec<char>]) {
     }
 
     // Build connections.
-    // TODO We could do this together with initializing the map since we only go up and left. But whatever.
+    // TODO We could do this together with initializing the map since we only check up and left. But whatever.
+    let mut starting_position = None;
     for row_idx in 1..(map.len() - 1) {
         for char_idx in 1..(map[row_idx].len() - 1) {
+            if map[row_idx][char_idx].symbol == 'S' {
+                starting_position = Some((row_idx, char_idx));
+            }
             print!("{}", &map[row_idx][char_idx].symbol);
             if north_south(
                 map[row_idx - 1][char_idx].symbol,
                 map[row_idx][char_idx].symbol,
             ) {
-                map[row_idx - 1][char_idx].south = Some((row_idx, char_idx));
-                map[row_idx][char_idx].north = Some((row_idx - 1, char_idx));
+                map[row_idx - 1][char_idx].add_connection((row_idx, char_idx));
+                map[row_idx][char_idx].add_connection((row_idx - 1, char_idx));
             }
 
             if west_east(
                 map[row_idx][char_idx - 1].symbol,
                 map[row_idx][char_idx].symbol,
             ) {
-                map[row_idx][char_idx - 1].east = Some((row_idx, char_idx));
-                map[row_idx][char_idx].west = Some((row_idx, char_idx - 1));
+                map[row_idx][char_idx - 1].add_connection((row_idx, char_idx));
+                map[row_idx][char_idx].add_connection((row_idx, char_idx - 1));
             }
         }
         println!("")
     }
+
+    let mut position = starting_position.expect("one to exist");
+    let mut steps = 0;
+    loop {}
+    dbg!(&starting_position);
+    // Depth first search
 
     println!("One: {sum} | Elapsed: {:?}", now.elapsed());
 }
