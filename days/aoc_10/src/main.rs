@@ -1,6 +1,7 @@
 //! Part 1: 6786
 //! Part 2:
 
+use core::num;
 use std::{collections::HashSet, io::BufRead};
 
 fn input() -> Vec<Vec<char>> {
@@ -33,6 +34,7 @@ fn pad_input(mut input: Vec<Vec<char>>) -> Vec<Vec<char>> {
 #[derive(Debug)]
 struct Node {
     symbol: char,
+    main_loop: bool,
 
     connections: Vec<(usize, usize)>,
 }
@@ -42,6 +44,7 @@ impl Node {
         Self {
             symbol,
             connections: Vec::new(),
+            main_loop: false,
         }
     }
 
@@ -128,7 +131,6 @@ fn one(input: &[Vec<char>]) {
     let now = std::time::Instant::now();
     let input = pad_input(input.to_vec());
 
-    // TODO: We can skip building the map and instead find connections as we go....
     let mut map: Vec<Vec<Node>> = Vec::with_capacity(input.len());
     // Build map so we can reference all other nodes while creating the connections.
     for row in input.iter() {
@@ -136,7 +138,6 @@ fn one(input: &[Vec<char>]) {
     }
 
     // Build connections.
-    // TODO We could do this together with initializing the map since we only check up and left. But whatever.
     let mut starting_position = None;
     for row_idx in PADDING..(map.len() - PADDING) {
         for char_idx in PADDING..(map[row_idx].len() - PADDING) {
@@ -183,11 +184,116 @@ fn one(input: &[Vec<char>]) {
     println!("One: {farthest} | Elapsed: {:?}", now.elapsed());
 }
 
-fn two(_input: &[Vec<char>]) {
-    let now = std::time::Instant::now();
-    let sum = 0;
+fn two(input: &[Vec<char>]) {
+    const PADDING: usize = 1;
 
-    println!("Two: {sum} | Elapsed: {:?}", now.elapsed());
+    let now = std::time::Instant::now();
+    let input = pad_input(input.to_vec());
+
+    let mut map: Vec<Vec<Node>> = Vec::with_capacity(input.len());
+    // Build map so we can reference all other nodes while creating the connections.
+    for row in input.iter() {
+        map.push(row.iter().map(|c| Node::new(*c)).collect());
+    }
+
+    // Build connections.
+    let mut starting_position = None;
+    for row_idx in PADDING..(map.len() - PADDING) {
+        for char_idx in PADDING..(map[row_idx].len() - PADDING) {
+            if map[row_idx][char_idx].symbol == 'S' {
+                starting_position = Some((row_idx, char_idx));
+            }
+            // print!("{}", &map[row_idx][char_idx].symbol);
+            if north_south(
+                map[row_idx - 1][char_idx].symbol,
+                map[row_idx][char_idx].symbol,
+            ) {
+                map[row_idx - 1][char_idx].add_connection((row_idx, char_idx));
+                map[row_idx][char_idx].add_connection((row_idx - 1, char_idx));
+            }
+
+            if west_east(
+                map[row_idx][char_idx - 1].symbol,
+                map[row_idx][char_idx].symbol,
+            ) {
+                map[row_idx][char_idx - 1].add_connection((row_idx, char_idx));
+                map[row_idx][char_idx].add_connection((row_idx, char_idx - 1));
+            }
+        }
+    }
+
+    // Depth first search. Hacky step counting which works since it never branches.
+    let starting_position = starting_position.expect("one to exist");
+    let mut stack = vec![starting_position];
+    let mut discovered = HashSet::new();
+
+    while let Some((row_idx, char_idx)) = stack.pop() {
+        if discovered.insert((row_idx, char_idx)) {
+            map[row_idx][char_idx].main_loop = true;
+
+            for (edge_row_idx, edge_char_idx) in &map[row_idx][char_idx].connections {
+                stack.push((*edge_row_idx, *edge_char_idx));
+            }
+        }
+    }
+
+    const TEST: usize = 8;
+
+    for (idx, row) in map.iter().enumerate() {
+        for node in row {
+            print!("{}", node.symbol);
+        }
+        println!("");
+        if idx == TEST {
+            break;
+        }
+    }
+
+    println!("");
+
+    // Scan each row to find inside and outside
+    for (idx, row) in map.iter().enumerate() {
+        let mut inside = false;
+        let mut num_inside = 0;
+        let mut last_node_main_loop = false;
+
+        for node in row {
+            let mut char = '0';
+
+            if node.main_loop && !last_node_main_loop {
+                inside = true
+            } else if !node.main_loop && inside {
+                inside = false
+            }
+
+            last_node_main_loop = node.main_loop;
+
+            if inside && !node.main_loop {
+                num_inside += 1;
+            }
+
+            // if node.main_loop {
+            //     char = '#';
+            // }
+
+            // if !inside && node.main_loop {
+            //     inside = true;
+            // } else if !node.main_loop {
+            //     inside = false;
+            // }
+
+            // if inside {
+            //     char = '1';
+            //     num_inside += 1
+            // }
+            // print!("{char}");
+        }
+        println!(": {num_inside}");
+        if idx == TEST {
+            break;
+        }
+    }
+    println!("Two: asd | Elapsed: {:?}", now.elapsed());
 }
 
 fn main() {
