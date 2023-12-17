@@ -1,4 +1,4 @@
-//! Part 1:
+//! Part 1: 6786
 //! Part 2:
 
 use std::{collections::HashSet, io::BufRead};
@@ -32,39 +32,21 @@ fn pad_input(mut input: Vec<Vec<char>>) -> Vec<Vec<char>> {
 
 #[derive(Debug)]
 struct Node {
-    id: (usize, usize),
     symbol: char,
 
     connections: Vec<(usize, usize)>,
-
-    steps: usize,
-    // // Connections:
-    // north: Option<(usize, usize)>,
-    // south: Option<(usize, usize)>,
-    // west: Option<(usize, usize)>,
-    // east: Option<(usize, usize)>,
 }
 
 impl Node {
-    fn new(id: (usize, usize), symbol: char) -> Self {
+    fn new(symbol: char) -> Self {
         Self {
-            id,
             symbol,
             connections: Vec::new(),
-            steps: usize::MAX,
         }
     }
 
     fn add_connection(&mut self, id: (usize, usize)) {
         self.connections.push(id)
-    }
-
-    // Returns None if there are no more nodes.
-    fn next_node(&self, previous_id: (usize, usize)) -> Option<(usize, usize)> {
-        self.connections
-            .iter()
-            .find(|node| **node != previous_id)
-            .cloned()
     }
 }
 
@@ -144,30 +126,24 @@ fn one(input: &[Vec<char>]) {
     const PADDING: usize = 1;
 
     let now = std::time::Instant::now();
-    let sum = 0;
     let input = pad_input(input.to_vec());
 
     // TODO: We can skip building the map and instead find connections as we go....
     let mut map: Vec<Vec<Node>> = Vec::with_capacity(input.len());
     // Build map so we can reference all other nodes while creating the connections.
-    for (row_idx, row) in input.iter().enumerate() {
-        map.push(
-            row.iter()
-                .enumerate()
-                .map(|(char_idx, c)| Node::new((row_idx, char_idx), *c))
-                .collect(),
-        );
+    for row in input.iter() {
+        map.push(row.iter().map(|c| Node::new(*c)).collect());
     }
 
     // Build connections.
     // TODO We could do this together with initializing the map since we only check up and left. But whatever.
     let mut starting_position = None;
-    for row_idx in 1..(map.len() - 1) {
-        for char_idx in 1..(map[row_idx].len() - 1) {
+    for row_idx in PADDING..(map.len() - PADDING) {
+        for char_idx in PADDING..(map[row_idx].len() - PADDING) {
             if map[row_idx][char_idx].symbol == 'S' {
                 starting_position = Some((row_idx, char_idx));
             }
-            print!("{}", &map[row_idx][char_idx].symbol);
+            // print!("{}", &map[row_idx][char_idx].symbol);
             if north_south(
                 map[row_idx - 1][char_idx].symbol,
                 map[row_idx][char_idx].symbol,
@@ -184,7 +160,6 @@ fn one(input: &[Vec<char>]) {
                 map[row_idx][char_idx].add_connection((row_idx, char_idx - 1));
             }
         }
-        println!("")
     }
 
     // Depth first search. Hacky step counting which works since it never branches.
