@@ -19,7 +19,7 @@ fn one(input: &[String]) {
                 .filter_map(|digit| digit.to_digit(10))
                 .collect::<Vec<u32>>()
         })
-        .filter(|line| !line.is_empty())
+        .filter(|line: &Vec<u32>| !line.is_empty())
         // SAFETY: We filter empty lines and thus first and last must exist.
         .map(|line| (10 * line.first().unwrap()) + line.last().unwrap())
         .sum();

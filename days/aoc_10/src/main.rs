@@ -1,7 +1,7 @@
 //! Part 1:
 //! Part 2:
 
-use std::{io::BufRead, thread::current};
+use std::{collections::HashSet, io::BufRead};
 
 fn input() -> Vec<Vec<char>> {
     let stdin = std::io::stdin();
@@ -36,6 +36,8 @@ struct Node {
     symbol: char,
 
     connections: Vec<(usize, usize)>,
+
+    steps: usize,
     // // Connections:
     // north: Option<(usize, usize)>,
     // south: Option<(usize, usize)>,
@@ -49,17 +51,26 @@ impl Node {
             id,
             symbol,
             connections: Vec::new(),
+            steps: usize::MAX,
         }
     }
 
     fn add_connection(&mut self, id: (usize, usize)) {
         self.connections.push(id)
     }
+
+    // Returns None if there are no more nodes.
+    fn next_node(&self, previous_id: (usize, usize)) -> Option<(usize, usize)> {
+        self.connections
+            .iter()
+            .find(|node| **node != previous_id)
+            .cloned()
+    }
 }
 
-fn north_south(northern: char, southern: char) -> bool {
+fn north_south(north: char, south: char) -> bool {
     // We only need to specify the valid directions
-    match (northern, southern) {
+    match (north, south) {
         // Straights
         ('|', '|') => true,
 
@@ -71,6 +82,13 @@ fn north_south(northern: char, southern: char) -> bool {
         // Down -> Up -> Right/Left
         ('7', '|') => true,
         ('F', '|') => true,
+
+        // Curve to curve
+        ('7', 'J') => true,
+        ('7', 'L') => true,
+
+        ('F', 'J') => true,
+        ('F', 'L') => true,
 
         // Starting position
         ('S', '|') => true,
@@ -86,9 +104,9 @@ fn north_south(northern: char, southern: char) -> bool {
     }
 }
 
-fn west_east(western: char, eastern: char) -> bool {
+fn west_east(west: char, east: char) -> bool {
     // We only need to specify the valid directions
-    match (western, eastern) {
+    match (west, east) {
         // Straights
         ('-', '-') => true,
 
@@ -100,6 +118,13 @@ fn west_east(western: char, eastern: char) -> bool {
         // Down -> Up -> Right/Left
         ('L', '-') => true,
         ('F', '-') => true,
+
+        // Curves to curves
+        ('L', 'J') => true,
+        ('L', '7') => true,
+
+        ('F', 'J') => true,
+        ('F', '7') => true,
 
         // Starting position
         ('S', '-') => true,
@@ -162,17 +187,25 @@ fn one(input: &[Vec<char>]) {
         println!("")
     }
 
-    let (mut row_idx, mut char_idx) = starting_position.expect("one to exist");
-    // To prevent us moving backwards
-    let (mut last_row_idx, mut last_char_idx) = (row_idx, char_idx);
-    let mut steps = 0;
-    loop {
-        // looop
-    }
-    dbg!(&starting_position);
-    // Depth first search
+    // Depth first search. Hacky step counting which works since it never branches.
+    let starting_position = starting_position.expect("one to exist");
+    let mut stack = vec![starting_position];
+    let mut discovered = HashSet::new();
+    let mut steps: usize = 0;
 
-    println!("One: {sum} | Elapsed: {:?}", now.elapsed());
+    while let Some((row_idx, char_idx)) = stack.pop() {
+        if discovered.insert((row_idx, char_idx)) {
+            steps += 1;
+
+            for (edge_row_idx, edge_char_idx) in &map[row_idx][char_idx].connections {
+                stack.push((*edge_row_idx, *edge_char_idx));
+            }
+        }
+    }
+
+    let farthest = steps / 2;
+
+    println!("One: {farthest} | Elapsed: {:?}", now.elapsed());
 }
 
 fn two(_input: &[Vec<char>]) {
@@ -196,6 +229,8 @@ mod tests {
     #[test]
     fn north_south_connections() {
         let test_table = [
+            // Curves to Curves
+            ('7', 'J', true),
             // Straights
             ('|', '|', true),
             ('|', '-', false),
@@ -208,6 +243,15 @@ mod tests {
 
         for (a, b, res) in test_table {
             assert_eq!(north_south(a, b), res);
+        }
+    }
+
+    #[test]
+    fn west_east_connections() {
+        let test_table = [('L', 'J', true), ('L', '7', true), ('F', '7', true)];
+
+        for (a, b, res) in test_table {
+            assert_eq!(west_east(a, b), res);
         }
     }
 }

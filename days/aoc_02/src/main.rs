@@ -66,7 +66,7 @@ fn two(input: &[String]) {
             }
             max_of_each_color
                 .iter()
-                .fold(None, |acc, (_, value)| match acc {
+                .fold(None, |acc: Option<u64>, (_, value)| match acc {
                     Some(acc) => Some(acc * value),
                     None => Some(*value),
                 })
