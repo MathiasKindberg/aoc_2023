@@ -264,11 +264,10 @@ fn two(input: &[Vec<char>]) {
 
     map[starting_position.0][starting_position.1].symbol = start_symbol;
 
-    let mut total_num_inside = 0;
+    let mut num_inside = 0;
     // Scan each row to find inside and outside
     for row in map.iter() {
         let mut inside = false;
-        let mut row_num_inside = 0;
         let mut previous_corner = None;
 
         for node in row {
@@ -288,18 +287,15 @@ fn two(input: &[Vec<char>]) {
                         }
                         previous_corner = Some(node.symbol)
                     }
-
                     _ => (),
                 }
             }
-
             if inside && !node.main_loop {
-                row_num_inside += 1;
+                num_inside += 1;
             }
         }
-        total_num_inside += row_num_inside;
     }
-    println!("Two: {total_num_inside} | Elapsed: {:?}", now.elapsed());
+    println!("Two: {num_inside} | Elapsed: {:?}", now.elapsed());
 }
 
 fn main() {
