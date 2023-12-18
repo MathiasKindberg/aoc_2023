@@ -1,7 +1,6 @@
 //! Part 1: 6786
-//! Part 2:
+//! Part 2: 495
 
-use core::num;
 use std::{collections::HashSet, io::BufRead};
 
 fn input() -> Vec<Vec<char>> {
@@ -237,63 +236,70 @@ fn two(input: &[Vec<char>]) {
         }
     }
 
-    const TEST: usize = 8;
+    // Replace starting position.
+    let diffs: Vec<_> = map[starting_position.0][starting_position.1]
+        .connections
+        .iter()
+        .map(|(row_idx, char_idx)| {
+            (
+                *row_idx as i64 - starting_position.0 as i64,
+                *char_idx as i64 - starting_position.1 as i64,
+            )
+        })
+        .collect();
 
-    for (idx, row) in map.iter().enumerate() {
-        for node in row {
-            print!("{}", node.symbol);
-        }
-        println!("");
-        if idx == TEST {
-            break;
-        }
-    }
+    // Convert 'S' to the correct start symbol
+    let start_symbol = match (diffs[0], diffs[1]) {
+        ((-1, 0), (1, 0)) | ((1, 0), (-1, 0)) => '|',
+        ((0, -1), (0, 1)) | ((0, 1), (0, -1)) => '-',
 
-    println!("");
+        ((0, 1), (1, 0)) | ((1, 0), (0, 1)) => 'F',
+        ((-1, 0), (0, 1)) | ((0, 1), (-1, 0)) => 'L',
 
+        ((-1, 0), (0, -1)) | ((0, -1), (-1, 0)) => 'J',
+        ((0, -1), (1, 0)) | ((1, 0), (0, -1)) => '7',
+
+        _ => unreachable!("Unknown start symbol"),
+    };
+
+    map[starting_position.0][starting_position.1].symbol = start_symbol;
+
+    let mut total_num_inside = 0;
     // Scan each row to find inside and outside
-    for (idx, row) in map.iter().enumerate() {
+    for row in map.iter() {
         let mut inside = false;
-        let mut num_inside = 0;
-        let mut last_node_main_loop = false;
+        let mut row_num_inside = 0;
+        let mut previous_corner = None;
 
         for node in row {
-            let mut char = '0';
+            // Only switch if we encounter the main loop.
+            if node.main_loop {
+                match node.symbol {
+                    '|' => inside = !inside,
+                    // Handle "complicated" straight pipes
+                    'L' | 'J' | '7' | 'F' => {
+                        if let Some(previous_corner) = previous_corner {
+                            match (previous_corner, node.symbol) {
+                                ('F', 'J') => inside = !inside,
+                                ('L', '7') => inside = !inside,
 
-            if node.main_loop && !last_node_main_loop {
-                inside = true
-            } else if !node.main_loop && inside {
-                inside = false
+                                _ => (),
+                            }
+                        }
+                        previous_corner = Some(node.symbol)
+                    }
+
+                    _ => (),
+                }
             }
-
-            last_node_main_loop = node.main_loop;
 
             if inside && !node.main_loop {
-                num_inside += 1;
+                row_num_inside += 1;
             }
-
-            // if node.main_loop {
-            //     char = '#';
-            // }
-
-            // if !inside && node.main_loop {
-            //     inside = true;
-            // } else if !node.main_loop {
-            //     inside = false;
-            // }
-
-            // if inside {
-            //     char = '1';
-            //     num_inside += 1
-            // }
-            // print!("{char}");
         }
-        println!(": {num_inside}");
-        if idx == TEST {
-            break;
-        }
+        total_num_inside += row_num_inside;
     }
-    println!("Two: asd | Elapsed: {:?}", now.elapsed());
+    println!("Two: {total_num_inside} | Elapsed: {:?}", now.elapsed());
 }
 
 fn main() {
