@@ -8,16 +8,25 @@ fn input() -> Vec<String> {
     stdin.lock().lines().map_while(Result::ok).collect()
 }
 
+fn is_valid(geometry: &str, nums: &[usize]) -> bool {
+    for num in nums {}
+    false
+}
+
 fn one(input: &[String]) {
     use itertools::Itertools;
     let now = std::time::Instant::now();
     let sum = 0;
-    let input: Vec<(&str, Vec<usize>)> = input
+    // let input: Vec<(Vec<char>, Vec<usize>)> = input
+    let input: Vec<(_, Vec<usize>)> = input
         .iter()
         .map(|row| row.split_ascii_whitespace().collect_tuple().unwrap())
         .map(|(groups, numbers)| {
             (
-                groups,
+                groups.chars().map(|c| match c {
+                    '?' => 
+                }).collect::<Vec<_>>(),
+                // groups,
                 numbers
                     .split(',')
                     .map(|num| num.parse::<usize>().unwrap())
@@ -26,7 +35,17 @@ fn one(input: &[String]) {
         })
         .collect();
 
-    println!("{input:#?}");
+    // println!("{input:#?}");
+    let mut result = Vec::new();
+    for (geometry, nums) in input {
+        for char in geometry.chars() {}
+        let num_arrangements = 0;
+
+        println!("{geometry:?} {nums:?}");
+
+        break;
+        // result.clear();
+    }
 
     println!("One: {sum} | Elapsed: {:?}", now.elapsed());
 }
