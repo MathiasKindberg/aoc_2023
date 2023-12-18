@@ -1,5 +1,5 @@
-//! Part 1:
-//! Part 2:
+//! Part 1: 9648398
+//! Part 2: 618800410814
 
 use std::{collections::HashSet, io::BufRead};
 
@@ -27,28 +27,28 @@ fn expand_horizontal_empty_space(mut input: Vec<Vec<char>>) -> Vec<Vec<char>> {
         .collect();
     // Remember offset
     for (idx, row) in to_insert.iter().enumerate() {
-        input.insert(row + idx, ".".repeat(input[0].len()).chars().collect())
+        input.insert(row + idx, ".".repeat(input[0].len()).chars().collect());
     }
     input
 }
 
 fn expand_vertical_space(mut input: Vec<Vec<char>>) -> Vec<Vec<char>> {
     let mut to_insert = Vec::new();
-    for (char_idx, _) in input[0].iter().enumerate() {
+    for (col_idx, _) in input[0].iter().enumerate() {
         let mut num_galaxies = 0;
         for (row_idx, _) in input.iter().enumerate() {
-            if input[row_idx][char_idx] == '#' {
+            if input[row_idx][col_idx] == '#' {
                 num_galaxies += 1;
             }
         }
         if num_galaxies == 0 {
-            to_insert.push(char_idx);
+            to_insert.push(col_idx);
         }
     }
 
     for (idx, char_idx) in to_insert.iter().enumerate() {
         for row in &mut input {
-            row.insert(char_idx + idx, '.')
+            row.insert(char_idx + idx, '.');
         }
     }
 
@@ -71,9 +71,9 @@ fn one(input: Vec<Vec<char>>) {
         .iter()
         .enumerate()
         .flat_map(|(row_idx, row)| {
-            row.iter().enumerate().filter_map(move |(char_idx, c)| {
+            row.iter().enumerate().filter_map(move |(col_idx, c)| {
                 if *c == '#' {
-                    Some((row_idx, char_idx))
+                    Some((row_idx, col_idx))
                 } else {
                     None
                 }
@@ -104,44 +104,62 @@ fn one(input: Vec<Vec<char>>) {
 }
 
 fn two(input: Vec<Vec<char>>) {
+    const UNIVERSE_EXPANSION: usize = 1000000;
+    // Need this because we are 0 indexed.
+    const OFFSET: usize = UNIVERSE_EXPANSION - 1;
     let now = std::time::Instant::now();
-    let input = expand_vertical_space(expand_horizontal_empty_space(input));
-    // for row in &input {
-    //     for c in row {
-    //         print!("{c}");
-    //     }
-    //     println!();
-    // }
+
+    let mut row_expansion = 0;
+    let mut row_expansions = vec![];
+    let mut col_expansion = 0;
+    let mut col_expansions = vec![];
+
+    for (_, row) in input.iter().enumerate() {
+        row_expansions.push(row_expansion);
+        if row.iter().filter(|c| c == &&'#').count() == 0 {
+            row_expansion += OFFSET;
+        }
+    }
+
+    for (col_idx, _) in input[0].iter().enumerate() {
+        let mut num = 0;
+        for (row_idx, _) in input.iter().enumerate() {
+            if input[row_idx][col_idx] == '#' {
+                num += 1;
+            }
+        }
+
+        col_expansions.push(col_expansion);
+        if num == 0 {
+            col_expansion += OFFSET;
+        }
+    }
 
     let galaxies: Vec<_> = input
         .iter()
         .enumerate()
         .flat_map(|(row_idx, row)| {
-            row.iter().enumerate().filter_map(move |(char_idx, c)| {
-                if *c == '#' {
-                    Some((row_idx, char_idx))
-                } else {
-                    None
-                }
-            })
+            row.iter()
+                .enumerate()
+                .filter_map(|(col_idx, c)| {
+                    if *c == '#' {
+                        Some((
+                            row_idx + row_expansions[row_idx],
+                            col_idx + col_expansions[col_idx],
+                        ))
+                    } else {
+                        None
+                    }
+                })
+                .collect::<Vec<_>>()
         })
         .enumerate()
         .map(|(idx, galaxy)| (idx + 1, galaxy))
         .collect();
 
-    // Distances -> Calculate diff in X and Y height.
-    // let _total_distance = 0;
-    // let mut distances = Vec::new();
-    // let mut seen = HashSet::with_capacity(galaxies.len().pow(2));
-    // for (a, a_loc) in &galaxies {
-    //     for (b, b_loc) in &galaxies {
-    //         if a != b && seen.insert((a, b)) && seen.insert((b, a)) {
-    //             distances.push(((a, b), calculate_distance(a_loc, b_loc)));
-    //         }
-    //     }
-    // }
-
-    // // let total_distance: isize = distances.iter().map(|(_, distance)| distance).sum();
+    for galaxy in &galaxies {
+        println!("{galaxy:?}");
+    }
 
     let mut seen = HashSet::with_capacity(galaxies.len().pow(2));
     let total_distance: isize = galaxies
@@ -159,12 +177,6 @@ fn two(input: Vec<Vec<char>>) {
                 .collect::<Vec<isize>>()
         })
         .sum();
-
-    // for distance in &distances {
-    //     println!("{distance:?}");
-    // }
-
-    // println!("num: {}", distances.len());
 
     println!("Two: {total_distance} | Elapsed: {:?}", now.elapsed());
 }
