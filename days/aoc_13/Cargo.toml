@@ -7,4 +7,6 @@ edition = "2021"
 
 [dependencies]
 itertools = "0.12.0"
+
+# Local
 aoc_lib = { path = "../aoc_lib" }

@@ -10,6 +10,16 @@ enum Ground {
     Empty,
 }
 
+impl std::fmt::Display for Ground {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Ground::Empty => write!(f, "."),
+            Ground::Round => write!(f, "O"),
+            Ground::Cube => write!(f, "#"),
+        }
+    }
+}
+
 fn input() -> Vec<Vec<Ground>> {
     let stdin = std::io::stdin();
     stdin
@@ -32,6 +42,15 @@ fn input() -> Vec<Vec<Ground>> {
 fn one(input: Vec<Vec<Ground>>) {
     let now = std::time::Instant::now();
     let sum = 0;
+
+    for row in &input {
+        for c in row {
+            print!("{c}")
+        }
+        println!()
+    }
+
+    let input = aoc_lib::transpose2(input);
 
     println!("One: {sum} | Elapsed: {:?}", now.elapsed());
 }
