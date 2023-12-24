@@ -1,5 +1,5 @@
 //! Part 1: 34918
-//! Part 2:
+//! Part 2: 33054
 
 use std::io::BufRead;
 
@@ -24,49 +24,60 @@ fn transpose2<T>(v: Vec<Vec<T>>) -> Vec<Vec<T>> {
 }
 
 /// Validate if split is a true mirroring point
-fn validate_mirror_index(map: &[Vec<char>], idx: usize, split_distance: isize) -> bool {
+fn validate_reflection_index(
+    map: &[Vec<char>],
+    idx: usize,
+    split_distance: isize,
+    max_diff: usize,
+) -> bool {
     // We do not need to be equal if the split line does not have a matching row outside.
     // + 1 to put the split line in between two rows
     if idx as isize - split_distance < 0 || idx as isize + 1 + split_distance >= map.len() as isize
     {
-        return true;
+        // Only return true if we have used up our expected difference. Otherwise we will find the
+        // original line that does not need a difference
+        return max_diff == 0;
     }
 
-    if map[idx - split_distance as usize]
+    let diff = map[idx - split_distance as usize]
         .iter()
-        .eq(map[idx + 1 + split_distance as usize].iter())
-    {
-        validate_mirror_index(map, idx, split_distance + 1)
+        .zip(map[idx + 1 + split_distance as usize].iter())
+        .filter(|(a, b)| a != b)
+        .count();
+
+    if diff <= max_diff {
+        validate_reflection_index(map, idx, split_distance + 1, max_diff - diff)
     } else {
         false
     }
 }
 
-/// Finds all potential mirror splits
-fn find_mirror_index(map: &[Vec<char>]) -> Option<usize> {
+fn find_reflection_index(map: &[Vec<char>], diff: usize) -> Option<usize> {
     let potential_mirror_indexes: Vec<_> = map
         .windows(2)
         .enumerate()
         .filter_map(|(idx, window)| {
-            if window[0].iter().eq(window[1].iter()) {
-                Some(idx)
+            let found_diff = window[0]
+                .iter()
+                .zip(window[1].iter())
+                .filter(|(a, b)| a != b)
+                .count();
+            if found_diff <= diff {
+                Some((idx, found_diff))
             } else {
                 None
             }
         })
         .collect();
 
-    for idx in potential_mirror_indexes {
-        if validate_mirror_index(map, idx, 1) {
+    for (idx, found_diff) in potential_mirror_indexes {
+        if validate_reflection_index(map, idx, 1, diff - found_diff) {
             return Some(idx + 1);
         }
     }
     None
 }
 
-/// To solve:
-/// 1. Find which line splits the input, horizontal or vertical.
-/// 2. Count lines to the left and above and summarize.
 fn one(input: &[String]) {
     let now = std::time::Instant::now();
     let mut sum = 0;
@@ -77,8 +88,8 @@ fn one(input: &[String]) {
     let input: Vec<_> = input.split(|row| row.is_empty()).collect();
 
     for map in &input {
-        let horizontal = find_mirror_index(map);
-        let vertical = find_mirror_index(&transpose2(map.to_vec()));
+        let horizontal = find_reflection_index(map, 0);
+        let vertical = find_reflection_index(&transpose2(map.to_vec()), 0);
 
         assert_ne!(
             horizontal.is_some(),
@@ -91,9 +102,32 @@ fn one(input: &[String]) {
 
     println!("One: {sum} | Elapsed: {:?}", now.elapsed());
 }
-fn two(_input: &[String]) {
+
+fn two(input: Vec<String>) {
     let now = std::time::Instant::now();
-    let sum = 0;
+    let mut sum = 0;
+    let input: Vec<Vec<char>> = input
+        .iter()
+        .cloned()
+        .map(|row| row.chars().collect::<Vec<_>>())
+        .collect();
+    let input: Vec<Vec<Vec<char>>> = input
+        .split(|row| row.is_empty())
+        .map(|row| row.to_vec())
+        .collect();
+
+    for map in &input {
+        let horizontal = find_reflection_index(map, 1);
+        let vertical = find_reflection_index(&transpose2(map.to_vec()), 1);
+
+        assert_ne!(
+            horizontal.is_some(),
+            vertical.is_some(),
+            "We should find either a horizontal or vertical split"
+        );
+
+        sum += horizontal.unwrap_or(0) * 100 + vertical.unwrap_or(0);
+    }
 
     println!("Two: {sum} | Elapsed: {:?}", now.elapsed());
 }
@@ -101,5 +135,5 @@ fn two(_input: &[String]) {
 fn main() {
     let input = input();
     one(&input);
-    two(&input);
+    two(input);
 }
