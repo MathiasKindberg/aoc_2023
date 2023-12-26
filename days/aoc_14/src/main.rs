@@ -110,20 +110,26 @@ fn two(mut input: Vec<Vec<Ground>>) {
     aoc_lib::rotate_90_ccw_2d(&mut input);
     aoc_lib::rotate_90_ccw_2d(&mut input);
 
-    let mut seen: Vec<_> = vec![input.clone()];
+    let mut seen = std::collections::HashMap::with_capacity(150);
+    seen.insert(input.clone(), 0);
     let mut final_grid = None;
 
-    for _ in 0..CYCLES {
+    for curr_cycle in 1..CYCLES {
         cycle(&mut input);
 
-        if let Some(idx) = seen.iter().position(|x| x == &input) {
+        if let Some(idx) = seen.insert(input.clone(), curr_cycle) {
+            // It is not certain that the cycle begins at the first item
             let cycle_len = seen.len() - idx;
             let final_idx = idx + (CYCLES - idx) % cycle_len;
-            final_grid = Some(seen[final_idx].clone());
+            final_grid = Some(
+                seen.iter()
+                    .find(|(_, idx)| idx == &&final_idx)
+                    .map(|(grid, _)| grid)
+                    .unwrap()
+                    .clone(),
+            );
             break;
         }
-
-        seen.push(input.clone());
     }
 
     input = final_grid.unwrap();
