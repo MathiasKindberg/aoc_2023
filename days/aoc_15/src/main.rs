@@ -1,5 +1,5 @@
 //! Part 1: 515495
-//! Part 2:
+//! Part 2: 229349
 
 use std::io::BufRead;
 
@@ -36,13 +36,12 @@ struct Lens<'a> {
 
 fn two(input: &[String]) {
     let now = std::time::Instant::now();
-    let sum = 0;
     let operations: Vec<_> = input[0].split(',').collect();
 
     // Start with 255 empty boxes to ensure that all boxes we index into
     // based on the "HASH" exists.
     let mut boxes: Vec<Vec<Lens>> = vec![vec![]; 256];
-    println!("{operations:?}");
+
     for op in operations {
         if op.contains('=') {
             let mut op = op.split('=');
@@ -66,19 +65,28 @@ fn two(input: &[String]) {
             let label = &op[0..op.len() - 1];
             let hash = encode(&op[0..op.len() - 1]);
             let lens_box = &mut boxes[hash];
+
             lens_box.retain_mut(|elem| elem.label != label);
         } else {
             unreachable!("Unknown symbol in {op}")
         }
     }
 
-    for (idx, boxy) in boxes.iter().enumerate() {
-        if !boxy.is_empty() {
-            println!("{idx}: {boxy:?}");
-        }
-    }
+    let focusing_power: usize = boxes
+        .iter()
+        .enumerate()
+        .flat_map(|(box_idx, lens_box)| {
+            let box_number = box_idx + 1;
 
-    println!("Two: {sum} | Elapsed: {:?}", now.elapsed());
+            lens_box.iter().enumerate().map(move |(lens_idx, lens)| {
+                let slot_number = lens_idx + 1;
+
+                box_number * slot_number * lens.focal_length
+            })
+        })
+        .sum();
+
+    println!("Two: {focusing_power} | Elapsed: {:?}", now.elapsed());
 }
 
 fn main() {
