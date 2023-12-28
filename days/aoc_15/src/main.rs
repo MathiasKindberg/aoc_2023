@@ -8,20 +8,20 @@ fn input() -> Vec<String> {
     stdin.lock().lines().map_while(Result::ok).collect()
 }
 
-fn hash(mut current_value: u64, c: char) -> u64 {
-    current_value += c as u64;
+fn hash(mut current_value: usize, c: char) -> usize {
+    current_value += c as usize;
     current_value *= 17;
     current_value %= 256;
     current_value
 }
 
-fn encode(s: &str) -> u64 {
+fn encode(s: &str) -> usize {
     s.chars().fold(0, hash)
 }
 
 fn one(input: &[String]) {
     let now = std::time::Instant::now();
-    let sum: u64 = input[0].split(',').map(encode).sum();
+    let sum: usize = input[0].split(',').map(encode).sum();
     println!("One: {sum} | Elapsed: {:?}", now.elapsed());
 }
 
@@ -29,7 +29,9 @@ fn one(input: &[String]) {
 struct Lens<'a> {
     label: &'a str,
     focal_length: usize,
-    hash: u64,
+    // Could maybe make sense to instead have a new and return
+    // (Self, u64)
+    hash: usize,
 }
 
 fn two(input: &[String]) {
@@ -39,31 +41,40 @@ fn two(input: &[String]) {
 
     // Start with 255 empty boxes to ensure that all boxes we index into
     // based on the "HASH" exists.
-    let boxes: Vec<Vec<Lens>> = vec![vec![]; 255];
+    let mut boxes: Vec<Vec<Lens>> = vec![vec![]; 256];
     println!("{operations:?}");
     for op in operations {
         if op.contains('=') {
             let mut op = op.split('=');
+
+            // Before '=' is the label
             let label = op.next().unwrap();
             let lens = Lens {
                 label,
+                // After '=' is the focal length
                 focal_length: op.next().unwrap().parse::<usize>().unwrap(),
                 hash: encode(label),
             };
 
-            // dbg!(encode(lens.label));
-            println!("{lens:?}");
-            // if let Some(idx) = boxes
-            //     .iter()
-            //     .position(|lens_box| lens_box.label == lens.label)
-            // {
-            // } else {
-            // }
+            let lens_box = &mut boxes[lens.hash];
+            if let Some(existing_lens) = lens_box.iter_mut().find(|item| item.label == lens.label) {
+                existing_lens.focal_length = lens.focal_length;
+            } else {
+                lens_box.push(lens);
+            }
         } else if op.contains('-') {
-            let label = op.replace('-', "");
-            println!("{label:5} -> --")
+            let label = &op[0..op.len() - 1];
+            let hash = encode(&op[0..op.len() - 1]);
+            let lens_box = &mut boxes[hash];
+            lens_box.retain_mut(|elem| elem.label != label);
         } else {
             unreachable!("Unknown symbol in {op}")
+        }
+    }
+
+    for (idx, boxy) in boxes.iter().enumerate() {
+        if !boxy.is_empty() {
+            println!("{idx}: {boxy:?}");
         }
     }
 
