@@ -1,9 +1,9 @@
 //! Part 1:
 //! Part 2:
 
-use std::io::BufRead;
+use std::{io::BufRead, vec};
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum TileType {
     Empty,
 
@@ -54,10 +54,12 @@ impl LightRay {
     /// light ray. Extra light rays are created when
     /// interacting with the splitters.
     fn interact(mut self, tile: &mut Tile) -> Vec<LightRay> {
-        use num::complex::ComplexFloat;
+        // Don't count our extra layer.
+        if tile.tile_type != TileType::Wall {
+            tile.energizations += 1;
+        }
 
-        tile.energizations += 1;
-
+        // TODO: We need to detect cycles.
         match tile.tile_type {
             // Simple way to ensure light rays leaving the 2d space
             // dies.
@@ -68,17 +70,35 @@ impl LightRay {
 
             TileType::Empty => vec![self],
 
-            TileType::ForwardMirror => todo!("FORWARD"),
+            TileType::ForwardMirror => {
+                let reflection =
+                    if self.movement_vector.re.abs() == 1 && self.movement_vector.im.abs() == 0 {
+                        // →, ←
+                        FORWARD_MIRROR_REFLECTION
+                    } else {
+                        // ↑, ↓
+                        -FORWARD_MIRROR_REFLECTION
+                    };
+
+                self.movement_vector = self.movement_vector * reflection;
+                vec![self]
+            }
+
             TileType::BackwardMirror => {
-                println!("BACKWARD MIRROR");
-                println!("{self:?}");
-                println!("{tile:?}");
-                todo!("BACKWARD")
+                let reflection =
+                    if self.movement_vector.re.abs() == 1 && self.movement_vector.im.abs() == 0 {
+                        // →, ←
+                        BACKWARD_MIRROR_REFLECTION
+                    } else {
+                        // ↑, ↓
+                        -BACKWARD_MIRROR_REFLECTION
+                    };
+
+                self.movement_vector = self.movement_vector * reflection;
+                vec![self]
             }
 
             TileType::VerticalSplitter => {
-                println!("VERTICAL SPLIT: {}", self.location);
-
                 // Horizontal movement. Re part > 0, Im part = 0
                 // <--------->
                 if self.movement_vector.re.abs() == 1 && self.movement_vector.im == 0 {
@@ -100,7 +120,6 @@ impl LightRay {
                 }
             }
             TileType::HorizontalSplitter => {
-                println!("HORIZONTAL SPLIT: {}", self.location);
                 // Vertical movement. Re part = 0, Im part > 0
                 // ↑
                 // ↓
@@ -212,6 +231,13 @@ fn one(mut input: Vec<Vec<Tile>>) {
         }
 
         println!("\n===== STEP DONE ====")
+    }
+
+    for row in input {
+        for tile in row {
+            print!("{}", tile.energizations)
+        }
+        println!()
     }
 
     println!("One: {sum} | Elapsed: {:?}", now.elapsed());
