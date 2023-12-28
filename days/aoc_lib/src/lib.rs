@@ -1,3 +1,24 @@
+/// Adds a padding layer of dots around the schematic ensuring
+/// we do not have to deal with the edges.
+pub fn pad_input(mut input: Vec<Vec<char>>, character: char) -> Vec<Vec<char>> {
+    assert!(!input.is_empty(), "Expected input");
+
+    for row in input.iter_mut() {
+        row.insert(0, character);
+        row.push(character)
+    }
+
+    let top_bottom_padding: Vec<_> = character
+        .to_string()
+        .repeat(input[0].len())
+        .chars()
+        .collect();
+    input.insert(0, top_bottom_padding.clone());
+    input.push(top_bottom_padding);
+
+    input
+}
+
 // https://stackoverflow.com/questions/64498617/how-to-transpose-a-vector-of-vectors-in-rust
 pub fn transpose2<T>(v: Vec<Vec<T>>) -> Vec<Vec<T>> {
     assert!(!v.is_empty());
@@ -55,18 +76,6 @@ where
             matrix[j][size - 1 - i] = temp;
         }
     }
-    // for (int i = 0; i < N / 2; i++) {
-    //     for (int j = i; j < N - i - 1; j++) {
-
-    //         // Swap elements of each cycle
-    //         // in clockwise direction
-    //         int temp = a[i][j];
-    //         a[i][j] = a[N - 1 - j][i];
-    //         a[N - 1 - j][i] = a[N - 1 - i][N - 1 - j];
-    //         a[N - 1 - i][N - 1 - j] = a[j][N - 1 - i];
-    //         a[j][N - 1 - i] = temp;
-    //     }
-    // }
 }
 
 pub fn print_2d<T>(v: &[Vec<T>])
