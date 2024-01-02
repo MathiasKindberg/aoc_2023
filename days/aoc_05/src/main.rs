@@ -80,7 +80,6 @@ fn two_stupid_version(input: &[String]) {
         .split(' ')
         .map(|seed_number| seed_number.parse::<u64>().unwrap())
         .tuples()
-        .map(|(start, length)| (start, length))
         .collect();
 
     println!("Ranges: {seed_ranges:?}");

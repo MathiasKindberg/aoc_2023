@@ -31,21 +31,21 @@ fn valid_arrangements_memo<'a>(
             true => 0,
             false => 1,
         };
-        memo.insert((springs, counts).clone(), arrangements);
+        memo.insert((springs, counts), arrangements);
         return arrangements;
     }
 
     // If we can't fit the remaining springs then we can't find any more valid
     // arrangements down this path.
     if springs.len() < counts.iter().sum::<usize>() + counts.len() - 1 {
-        memo.insert((springs, counts).clone(), 0);
+        memo.insert((springs, counts), 0);
         return 0;
     }
 
     // Skip working on operational springs
     if springs[0] == Spring::Operational {
         let arrangements = valid_arrangements_memo(&springs[1..], counts, memo);
-        memo.insert((springs, counts).clone(), arrangements);
+        memo.insert((springs, counts), arrangements);
         return arrangements;
     }
 
@@ -69,7 +69,7 @@ fn valid_arrangements_memo<'a>(
         arrangements += valid_arrangements_memo(&springs[1..], counts, memo)
     }
 
-    memo.insert((springs, counts).clone(), arrangements);
+    memo.insert((springs, counts), arrangements);
 
     arrangements
 }

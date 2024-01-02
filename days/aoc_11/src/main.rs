@@ -114,7 +114,7 @@ fn two(input: Vec<Vec<char>>) {
     let mut col_expansion = 0;
     let mut col_expansions = vec![];
 
-    for (_, row) in input.iter().enumerate() {
+    for row in &input {
         row_expansions.push(row_expansion);
         if row.iter().filter(|c| c == &&'#').count() == 0 {
             row_expansion += OFFSET;

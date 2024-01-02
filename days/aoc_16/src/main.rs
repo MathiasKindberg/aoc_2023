@@ -1,7 +1,7 @@
 //! Part 1:
 //! Part 2:
 
-use std::{io::BufRead, vec};
+use std::{collections::HashSet, io::BufRead, vec};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum TileType {
@@ -53,18 +53,24 @@ impl LightRay {
     /// Interact with a tile returning the resulting
     /// light ray. Extra light rays are created when
     /// interacting with the splitters.
-    fn interact(mut self, tile: &mut Tile) -> Vec<LightRay> {
+    fn interact(
+        mut self,
+        tile: &mut Tile,
+        cycle_detection: &mut HashSet<(num::Complex<i64>, num::Complex<i64>)>,
+    ) -> Vec<LightRay> {
+        if !cycle_detection.insert((self.location, self.movement_vector)) {
+            return vec![];
+        }
+
         // Don't count our extra layer.
         if tile.tile_type != TileType::Wall {
             tile.energizations += 1;
         }
 
-        // TODO: We need to detect cycles.
         match tile.tile_type {
             // Simple way to ensure light rays leaving the 2d space
             // dies.
             TileType::Wall => {
-                println!("WALL");
                 vec![]
             }
 
@@ -80,7 +86,7 @@ impl LightRay {
                         -FORWARD_MIRROR_REFLECTION
                     };
 
-                self.movement_vector = self.movement_vector * reflection;
+                self.movement_vector *= reflection;
                 vec![self]
             }
 
@@ -94,7 +100,7 @@ impl LightRay {
                         -BACKWARD_MIRROR_REFLECTION
                     };
 
-                self.movement_vector = self.movement_vector * reflection;
+                self.movement_vector *= reflection;
                 vec![self]
             }
 
@@ -134,7 +140,6 @@ impl LightRay {
                             movement_vector: LEFT,
                         },
                     ];
-                    assert_eq!(resulting_rays.len(), 2);
                     resulting_rays
                 } else {
                     // Approaching from pointy end => Do nothing.
@@ -189,23 +194,18 @@ fn input() -> Vec<Vec<Tile>> {
         .collect()
 }
 
-fn one(mut input: Vec<Vec<Tile>>) {
-    let now = std::time::Instant::now();
-    let sum = 0;
-
-    for row in &input {
-        for tile in row {
-            print!("{}", tile.tile_type);
-        }
-        println!()
-    }
-
+fn count_energized(
+    mut input: Vec<Vec<Tile>>,
+    entry_location: num::Complex<i64>,
+    entry_movement_vector: num::Complex<i64>,
+) -> usize {
     let mut light_rays = vec![LightRay {
-        location: ENTRY_LOCATION,
-        movement_vector: ENTRY_MOVEMENT_VECTOR,
+        location: entry_location,
+        movement_vector: entry_movement_vector,
     }];
 
     let mut reflected_light_rays = Vec::new();
+    let mut cycle_detection = HashSet::new();
 
     while !light_rays.is_empty() {
         // Should be fine to go from back. Otherwise we can switch to a VecDeque
@@ -215,8 +215,8 @@ fn one(mut input: Vec<Vec<Tile>>) {
         for ray in light_rays.drain(..) {
             let re = ray.location.re as usize;
             let im = ray.location.im as usize;
-            println!("Interacting: {re}, {im}, {}", input[im][re].tile_type);
-            reflected_light_rays.append(&mut ray.interact(&mut input[im][re]));
+            reflected_light_rays
+                .append(&mut ray.interact(&mut input[im][re], &mut cycle_detection));
         }
 
         // Add the resulting rays from interacting with the tile
@@ -224,36 +224,79 @@ fn one(mut input: Vec<Vec<Tile>>) {
 
         // Step all lightrays to next location.
         for ray in &mut light_rays {
-            println!("--------------------");
-            println!("FROM: {}", ray.location);
-            ray.location = ray.location + ray.movement_vector;
-            println!("TO: {}", ray.location);
+            ray.location += ray.movement_vector;
         }
-
-        println!("\n===== STEP DONE ====")
     }
 
-    for row in input {
-        for tile in row {
-            print!("{}", tile.energizations)
-        }
-        println!()
-    }
-
-    println!("One: {sum} | Elapsed: {:?}", now.elapsed());
+    input
+        .iter()
+        .map(|row| row.iter().filter(|tile| tile.energizations > 0).count())
+        .sum()
 }
 
-fn two(_input: &[Vec<Tile>]) {
+fn one(input: Vec<Vec<Tile>>) {
     let now = std::time::Instant::now();
-    let sum = 0;
 
-    println!("Two: {sum} | Elapsed: {:?}", now.elapsed());
+    let energized = count_energized(input, ENTRY_LOCATION, ENTRY_MOVEMENT_VECTOR);
+
+    println!("One: {energized} | Elapsed: {:?}", now.elapsed());
+}
+
+/// Brute force potential optimizations:
+///
+/// 1. Use threads = Brute force faster
+/// 2. Be smarter when saving results rather than cloning the input each time.
+/// 3. Keep track of direction and result from tiles to shortcircuit calculation.
+fn two(input: Vec<Vec<Tile>>) {
+    let now = std::time::Instant::now();
+
+    let mut max_energized = 0;
+
+    // Down
+    for re in 1..input[1].len() - 1 {
+        max_energized = max_energized.max(count_energized(
+            input.clone(),
+            num::Complex::new(re as i64, 1),
+            DOWN,
+        ));
+    }
+
+    // Up
+    for re in 1..input[1].len() - 1 {
+        let im = input.len() - 2;
+        max_energized = max_energized.max(count_energized(
+            input.clone(),
+            num::Complex::new(re as i64, im as i64),
+            UP,
+        ));
+    }
+
+    // RIGHT
+    for im in 1..input.len() - 1 {
+        max_energized = max_energized.max(count_energized(
+            input.clone(),
+            num::Complex::new(1, im as i64),
+            RIGHT,
+        ));
+    }
+
+    // LEFT
+    for im in 1..input.len() - 1 {
+        let re = input[1].len() - 2;
+        max_energized = max_energized.max(count_energized(
+            input.clone(),
+            num::Complex::new(re as i64, im as i64),
+            RIGHT,
+        ));
+    }
+
+    println!("Two: {max_energized} | Elapsed: {:?}", now.elapsed());
 }
 
 fn main() {
     let input = input();
     one(input.clone());
-    two(&input);
+    two(input);
 }
 
 #[cfg(test)]
