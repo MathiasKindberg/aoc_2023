@@ -1,5 +1,5 @@
 //! Part 1: 1244
-//! Part 2:
+//! Part 2: 1367
 
 use std::{collections::HashMap, io::BufRead};
 
@@ -169,21 +169,24 @@ fn dijkstra(
     heap.push(start2);
 
     while let Some(curr) = heap.pop() {
-        if curr.position == goal {
+        if curr.position == goal && curr.moves_in_direction >= min_steps_in_direction {
             return Some(curr.cost);
         }
 
         // Important as we may have already found a better way
         if dist
             .get(&curr.into())
-            .is_some_and(|known_cost| known_cost < &curr.cost)
+            .is_some_and(|known_cost| &curr.cost > known_cost)
         {
             continue;
         }
 
         // For each node we can reach, see if we can find a way with
         // a lower cost going through this node
-        for edge in &adj_list[curr.position] {
+        for edge in adj_list[curr.position]
+            .iter()
+            .filter(|&edge| curr.direction.opposite() != edge.direction)
+        {
             let next = State {
                 cost: curr.cost + edge.cost,
                 position: edge.node,
@@ -197,15 +200,14 @@ fn dijkstra(
 
             // P1 and p2
             if next.moves_in_direction > max_steps_in_direction
-                || curr.direction.opposite() == next.direction
                 || dist
                     .get(&next.into())
-                    .is_some_and(|cost| *cost <= next.cost)
+                    .is_some_and(|cost| next.cost >= *cost)
             {
                 continue;
             }
 
-            if next.direction != curr.direction && next.moves_in_direction < min_steps_in_direction
+            if next.direction != curr.direction && curr.moves_in_direction < min_steps_in_direction
             {
                 continue;
             }
@@ -215,7 +217,6 @@ fn dijkstra(
         }
     }
 
-    // Goal not reachable
     None
 }
 
