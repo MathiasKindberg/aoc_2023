@@ -220,7 +220,6 @@ fn two(input: &[Command]) {
 /// Idiomatic implementation of shoelace formula. Requires a
 ///
 /// https://en.wikipedia.org/wiki/Shoelace_formula
-#[allow(dead_code)]
 fn shoelace_formula(points: &[Coord]) -> f64 {
     points
         .windows(2)
@@ -245,14 +244,10 @@ fn euclidian_distance(a: Coord, b: Coord) -> f64 {
 }
 
 fn perimeter(points: &[Coord]) -> isize {
-    let mut perimieter = 0;
-    for window in points.windows(2) {
-        perimieter += euclidian_distance(window[0], window[1]) as isize
-    }
-
-    // Need to include the distance from the last point to the first point
-    // perimieter + euclidian_distance(*points.last().unwrap(), *points.first().unwrap()) as isize
-    perimieter
+    points
+        .windows(2)
+        .map(|window| euclidian_distance(window[0], window[1]) as isize)
+        .sum()
 }
 
 fn main() {
