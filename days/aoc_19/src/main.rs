@@ -132,26 +132,94 @@ impl Step {
     /// Applies range and returns result.
     fn apply_range(&self, part_range: &PartRange) -> RangeResult {
         println!("Applying range: {part_range:?}");
+
+        let mut applicable_range = part_range.clone();
+        let mut not_applicable_range = part_range.clone();
+
         if let Some(condition) = &self.condition {
             println!("Condition: {condition:?}");
             let (applicable, not_applicable) = match condition.category {
-                Category::X => condition
-                    .operator
-                    .compare_range(part_range.x, condition.value),
-                Category::M => condition
-                    .operator
-                    .compare_range(part_range.m, condition.value),
-                Category::A => condition
-                    .operator
-                    .compare_range(part_range.a, condition.value),
-                Category::S => condition
-                    .operator
-                    .compare_range(part_range.s, condition.value),
+                Category::X => {
+                    let (applicable, not_applicable) = condition
+                        .operator
+                        .compare_range(part_range.x, condition.value);
+
+                    if let Some(applicable) = applicable {
+                        applicable_range.x = applicable;
+                    }
+
+                    if let Some(not_applicable) = not_applicable {
+                        not_applicable_range.x = not_applicable;
+                    }
+
+                    (
+                        applicable.map(|_| applicable_range),
+                        not_applicable.map(|_| not_applicable_range),
+                    )
+                }
+                Category::M => {
+                    let (applicable, not_applicable) = condition
+                        .operator
+                        .compare_range(part_range.m, condition.value);
+
+                    if let Some(applicable) = applicable {
+                        applicable_range.m = applicable;
+                    }
+
+                    if let Some(not_applicable) = not_applicable {
+                        not_applicable_range.m = not_applicable;
+                    }
+
+                    (
+                        applicable.map(|_| applicable_range),
+                        not_applicable.map(|_| not_applicable_range),
+                    )
+                }
+                Category::A => {
+                    let (applicable, not_applicable) = condition
+                        .operator
+                        .compare_range(part_range.a, condition.value);
+
+                    if let Some(applicable) = applicable {
+                        applicable_range.a = applicable;
+                    }
+
+                    if let Some(not_applicable) = not_applicable {
+                        not_applicable_range.a = not_applicable;
+                    }
+
+                    (
+                        applicable.map(|_| applicable_range),
+                        not_applicable.map(|_| not_applicable_range),
+                    )
+                }
+                Category::S => {
+                    let (applicable, not_applicable) = condition
+                        .operator
+                        .compare_range(part_range.s, condition.value);
+
+                    if let Some(applicable) = applicable {
+                        applicable_range.s = applicable;
+                    }
+
+                    if let Some(not_applicable) = not_applicable {
+                        not_applicable_range.s = not_applicable;
+                    }
+
+                    (
+                        applicable.map(|_| applicable_range),
+                        not_applicable.map(|_| not_applicable_range),
+                    )
+                }
+                _ => todo!(),
             };
 
-            println!("Applic: {applicable:?} Not Applic {not_applicable:?}");
+            println!("Applicable: {applicable:?}\nNot Applicable: {not_applicable:?}");
 
-            todo!()
+            RangeResult::Split(Split {
+                applicable: applicable.map(|applicable| (applicable, self.target.clone())),
+                not_applicable,
+            })
         } else {
             // If no condition send the range to the next one.
             RangeResult::Kept(self.target.clone())
@@ -168,10 +236,9 @@ enum RangeResult {
 #[derive(Debug, Clone)]
 struct Split {
     //Jumps to another workflow
-    applicable_target: String,
-    applicable: PartRange,
+    applicable: Option<(PartRange, Target)>,
     // Goes to the next step
-    not_applicable: PartRange,
+    not_applicable: Option<PartRange>,
 }
 
 #[derive(Debug, Clone)]
