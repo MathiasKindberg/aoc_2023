@@ -147,6 +147,7 @@ impl Step {
         let mut not_applicable_range = part_range.clone();
 
         if let Some(condition) = &self.condition {
+            // This awfully repetetive and ugly, but works well enough.
             match condition.category {
                 Category::X => {
                     let RangeComparionResult {
@@ -337,7 +338,6 @@ enum WorkflowResult {
     NotApplicable,
 }
 
-// Should likely be renamed
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum Target {
     Accepted,
