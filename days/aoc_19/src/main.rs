@@ -1,5 +1,5 @@
-//! Part 1:
-//! Part 2:
+//! Part 1: 331208
+//! Part 2: 121464316215623
 
 use std::{collections::HashMap, io::BufRead};
 
@@ -81,6 +81,18 @@ impl PartRange {
             s: (1, 4000),
         }
     }
+
+    fn combinations(&self) -> usize {
+        // A zero sized range means that the path could not exist. Therefore this is safe.
+
+        // Need to add +1 since we have 4000 combinations from 1 to 4000 while
+        // 4000 - 1 = 3999.
+        let x = self.x.1 - self.x.0 + 1;
+        let m = self.m.1 - self.m.0 + 1;
+        let a = self.a.1 - self.a.0 + 1;
+        let s = self.s.1 - self.s.0 + 1;
+        x * m * a * s
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -131,16 +143,16 @@ impl Step {
 
     /// Applies range and returns result.
     fn apply_range(&self, part_range: &PartRange) -> RangeResult {
-        println!("Applying range: {part_range:?}");
-
         let mut applicable_range = part_range.clone();
         let mut not_applicable_range = part_range.clone();
 
         if let Some(condition) = &self.condition {
-            println!("Condition: {condition:?}");
-            let (applicable, not_applicable) = match condition.category {
+            match condition.category {
                 Category::X => {
-                    let (applicable, not_applicable) = condition
+                    let RangeComparionResult {
+                        applicable,
+                        not_applicable,
+                    } = condition
                         .operator
                         .compare_range(part_range.x, condition.value);
 
@@ -151,14 +163,12 @@ impl Step {
                     if let Some(not_applicable) = not_applicable {
                         not_applicable_range.x = not_applicable;
                     }
-
-                    (
-                        applicable.map(|_| applicable_range),
-                        not_applicable.map(|_| not_applicable_range),
-                    )
                 }
                 Category::M => {
-                    let (applicable, not_applicable) = condition
+                    let RangeComparionResult {
+                        applicable,
+                        not_applicable,
+                    } = condition
                         .operator
                         .compare_range(part_range.m, condition.value);
 
@@ -169,14 +179,12 @@ impl Step {
                     if let Some(not_applicable) = not_applicable {
                         not_applicable_range.m = not_applicable;
                     }
-
-                    (
-                        applicable.map(|_| applicable_range),
-                        not_applicable.map(|_| not_applicable_range),
-                    )
                 }
                 Category::A => {
-                    let (applicable, not_applicable) = condition
+                    let RangeComparionResult {
+                        applicable,
+                        not_applicable,
+                    } = condition
                         .operator
                         .compare_range(part_range.a, condition.value);
 
@@ -187,14 +195,12 @@ impl Step {
                     if let Some(not_applicable) = not_applicable {
                         not_applicable_range.a = not_applicable;
                     }
-
-                    (
-                        applicable.map(|_| applicable_range),
-                        not_applicable.map(|_| not_applicable_range),
-                    )
                 }
                 Category::S => {
-                    let (applicable, not_applicable) = condition
+                    let RangeComparionResult {
+                        applicable,
+                        not_applicable,
+                    } = condition
                         .operator
                         .compare_range(part_range.s, condition.value);
 
@@ -205,20 +211,12 @@ impl Step {
                     if let Some(not_applicable) = not_applicable {
                         not_applicable_range.s = not_applicable;
                     }
-
-                    (
-                        applicable.map(|_| applicable_range),
-                        not_applicable.map(|_| not_applicable_range),
-                    )
                 }
-                _ => todo!(),
             };
 
-            println!("Applicable: {applicable:?}\nNot Applicable: {not_applicable:?}");
-
             RangeResult::Split(Split {
-                applicable: applicable.map(|applicable| (applicable, self.target.clone())),
-                not_applicable,
+                applicable: (applicable_range, self.target.clone()),
+                not_applicable: not_applicable_range,
             })
         } else {
             // If no condition send the range to the next one.
@@ -236,9 +234,9 @@ enum RangeResult {
 #[derive(Debug, Clone)]
 struct Split {
     //Jumps to another workflow
-    applicable: Option<(PartRange, Target)>,
+    applicable: (PartRange, Target),
     // Goes to the next step
-    not_applicable: Option<PartRange>,
+    not_applicable: PartRange,
 }
 
 #[derive(Debug, Clone)]
@@ -274,6 +272,11 @@ enum Operator {
     Less,
 }
 
+struct RangeComparionResult {
+    applicable: Option<(usize, usize)>,
+    not_applicable: Option<(usize, usize)>,
+}
+
 impl Operator {
     fn new(op: &str) -> Self {
         match op {
@@ -290,31 +293,35 @@ impl Operator {
         }
     }
 
-    fn compare_range(
-        &self,
-        a: (usize, usize),
-        target: usize,
-        //         Applicable           Not applicable
-    ) -> (Option<(usize, usize)>, Option<(usize, usize)>) {
-        println!("Range: {a:?} {self:?} {target}");
+    fn compare_range(&self, a: (usize, usize), target: usize) -> RangeComparionResult {
         match self {
             Self::Greater => {
-                let applicable = is_positive_range((a.0.max(target), a.1));
-                let not_applicable = is_positive_range((a.0, a.1.min(target - 1)));
+                // Need to take one step above the split
+                let applicable: Option<(usize, usize)> =
+                    is_positive_range((a.0.max(target) + 1, a.1));
+                let not_applicable = is_positive_range((a.0, a.1.min(target)));
 
-                (applicable, not_applicable)
+                RangeComparionResult {
+                    applicable,
+                    not_applicable,
+                }
             }
             Self::Less => {
+                // Need to take 1 step below the split.
                 let applicable = is_positive_range((a.0, a.1.min(target - 1)));
                 let not_applicable = is_positive_range((a.0.max(target), a.1));
 
-                (applicable, not_applicable)
+                RangeComparionResult {
+                    applicable,
+                    not_applicable,
+                }
             }
         }
     }
 }
 
-// Returns Some(range) if the range exists.
+/// Returns Some(range) if the range exists. After checking we never end up with
+/// negative ranges but this feels good to have.
 fn is_positive_range(range: (usize, usize)) -> Option<(usize, usize)> {
     // If lower end is larger than upper end this range do not exist anymore.
     if range.0 > range.1 {
@@ -382,7 +389,7 @@ fn one(input: &Input) {
 
     let elapsed = now.elapsed();
     println!("Accepted: {accepted} | Elapsed: {elapsed:?}",);
-    println!("Sum: {sum} | Elapsed: {elapsed:?}\n",);
+    println!("One: {sum} | Elapsed: {elapsed:?}",);
 }
 /// 1.
 /// Idea: Work backwards utilizing ranges. Start from all steps that end up in "A"
@@ -397,47 +404,36 @@ fn two(input: &Input) {
     let now = std::time::Instant::now();
     let Input(workflows, _) = input;
 
-    let sum = 0;
-
-    // Todo, should keep on going until done
-
     let part_range = PartRange::new();
-    let mut queue = vec![String::from("in")];
-    while let Some(workflow) = queue.pop() {
-        let workflow = workflows.get(&workflow).unwrap();
-        println!("\n===================");
-        println!("Workflow: {workflow:?}");
+    let mut combinations = 0;
+
+    let mut queue = vec![(String::from("in"), part_range)];
+    while let Some((workflow_name, mut part_range)) = queue.pop() {
+        let workflow = workflows.get(&workflow_name).unwrap();
 
         // for step in workflows.get(&workflow).unwrap() {
         for step in workflow {
             match step.apply_range(&part_range) {
-                RangeResult::Split(split) => println!("SPLIT: {split:?}"),
-                RangeResult::Kept(kept) => println!("KEPT: {kept:?}"),
+                RangeResult::Split(split) => {
+                    let (applicable_range, applicable_target) = split.applicable;
+                    match applicable_target {
+                        Target::Accepted => combinations += applicable_range.combinations(),
+                        Target::Rejected => (),
+                        Target::Workflow(flow) => queue.push((flow, applicable_range)),
+                    }
+                    // Apply the not applicable range to the next step.
+                    part_range = split.not_applicable;
+                }
+                RangeResult::Kept(target) => match target {
+                    Target::Accepted => combinations += part_range.combinations(),
+                    Target::Rejected => (),
+                    Target::Workflow(flow) => queue.push((flow, part_range.clone())),
+                },
             }
-            todo!()
         }
-
-        // Todo:
-        // for step in workflows.get(&workflow).unwrap() {
-        //     // Keep on applying steps until we get a result and then jump to that.
-        //     match step.apply(part) {
-        //         WorkflowResult::Applicable(result) => {
-        //             match result {
-        //                 Target::Accepted => {
-        //                     accepted += 1;
-        //                     sum += part.sum();
-        //                 }
-        //                 Target::Rejected => (),
-        //                 Target::Workflow(new_flow) => next_step = Some(new_flow),
-        //             }
-        //             break;
-        //         }
-        //         WorkflowResult::NotApplicable => (),
-        //     }
-        // }
     }
 
-    println!("Two: {sum} | Elapsed: {:?}", now.elapsed());
+    println!("Two: {combinations} | Elapsed: {:?} ", now.elapsed());
 }
 
 fn main() {
