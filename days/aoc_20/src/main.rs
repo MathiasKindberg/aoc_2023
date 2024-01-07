@@ -1,9 +1,7 @@
 //! Part 1: 808146535
 //! Part 2:
-//!
-//! To make it more efficient:
-//! 1. Stop using owned values.
 
+use core::panic;
 use std::{
     collections::{HashMap, VecDeque},
     io::BufRead,
@@ -144,90 +142,63 @@ fn one(input: &Input) {
     println!("One: {sum} | Elapsed: {:?}", now.elapsed());
 }
 
-// /// Idea:
-// /// 1. Find the LCM for all inputs to RG.
-// fn two(input: &Input) {
-//     let now = std::time::Instant::now();
-//     let mut low_pulses = 0;
-//     let mut high_pulses = 0;
-//     let mut input = input.clone();
+// Find LCM of inputs to rg.
+fn two(input: &Input) {
+    let now = std::time::Instant::now();
 
-//     // Connect inputs to conjunction modules.
-//     let conjunction_modules: Vec<_> = input
-//         .iter()
-//         .filter_map(|(key, value)| match value {
-//             Module::Conjunction(_) => Some(key.clone()),
-//             _ => None,
-//         })
-//         .collect();
+    let (mut module_map, destination_map) = input.clone();
 
-//     for conjunction in conjunction_modules {
-//         let connected_modules: Vec<_> = input
-//             .iter()
-//             .filter_map(|(name, module)| {
-//                 if module.destination_contains_module(&conjunction) {
-//                     Some(name.clone())
-//                 } else {
-//                     None
-//                 }
-//             })
-//             .collect();
+    let (module_before_rx, _) = destination_map
+        .iter()
+        .find(|(_, destinations)| destinations.contains(&"rx"))
+        .unwrap();
 
-//         match input.get_mut(&conjunction).unwrap() {
-//             Module::Conjunction(conjunction) => conjunction.input_state.extend(
-//                 connected_modules
-//                     .iter()
-//                     .map(|input_module| (input_module.to_owned(), PulseStrength::Low)),
-//             ),
-//             not_conjunction => unreachable!("Should never happen.... Got: {not_conjunction:?}"),
-//         }
-//     }
+    // VecDeque since we want to pull pulses from the top and push new ones to the end.
+    let mut pulse_queue: SignalQueue = VecDeque::new();
 
-//     let mut pulse_queue: SignalQueue = VecDeque::new();
+    let Module::Conjunction { memory } = module_map.get(module_before_rx).unwrap() else {
+        panic!()
+    };
 
-//     // We need to find when all inputs for "rg" is high.
-//     // Or rather, we need to find multipliers for all conjunctions....
-//     for button_presses in 1..=10000000 {
-//         // Button push
-//         pulse_queue.push_back(Signal {
-//             strength: PulseStrength::Low,
-//             from: "button",
-//             to: "broadcaster",
-//         });
+    let mut lcm_tracker: HashMap<&str, Option<usize>> =
+        memory.keys().map(|module| (*module, None)).collect();
 
-//         while let Some(pulse) = pulse_queue.pop_front() {
-//             match pulse.strength {
-//                 PulseStrength::High => high_pulses += 1,
-//                 PulseStrength::Low => low_pulses += 1,
-//             }
+    'button_press_loop: for butten_presses in 1..=100000000 {
+        // Button push
+        assert!(pulse_queue.is_empty());
+        pulse_queue.push_back(Signal {
+            strength: PulseStrength::Low,
+            from: "button",
+            to: "broadcaster",
+        });
 
-//             if let Some(module) = input.get_mut(pulse.to) {
-//                 let mut resulting_pulses = module.pulse(pulse);
-//                 pulse_queue.append(&mut resulting_pulses);
-//             }
-//         }
+        while let Some(pulse) = pulse_queue.pop_front() {
+            if pulse.to == *module_before_rx && pulse.strength == PulseStrength::High {
+                *lcm_tracker.get_mut(pulse.from).unwrap() = Some(butten_presses);
 
-//         // let mut high = false;
-//         // let conj = input.get("gs").unwrap().as_conjunction();
-//         // for (_, value) in &conj.input_state {
-//         //     if value == &PulseStrength::Low {
-//         //         high = true;
-//         //     }
-//         // }
+                if lcm_tracker.values().all(|presses| presses.is_some()) {
+                    let lcm = lcm_tracker
+                        .iter()
+                        .fold(None, |mut lcm_acc, (_, button_presses)| {
+                            let button_presses = button_presses.unwrap();
+                            match lcm_acc {
+                                None => lcm_acc = Some(button_presses),
+                                Some(curr_lcm) => {
+                                    lcm_acc = Some(aoc_lib::lcm(curr_lcm, button_presses))
+                                }
+                            }
+                            lcm_acc
+                        })
+                        .unwrap();
 
-//         // if high {
-//         //     println!("{button_presses}: {:?}", conj.input_state)
-//         // }
-
-//         // if low_pulses_to_rx != 0 {
-//         //     println!("Low to rx: {low_pulses_to_rx} after presses: {button_presses}");
-//         // }
-//         // if low_pulses_to_rx == 1 {
-//         //     println!("Two: {button_presses} | Elapsed: {:?}", now.elapsed());
-//         // }
-//     }
-//     println!("Two: | Elapsed: {:?}", now.elapsed());
-// }
+                    println!("Two: {lcm} | Elapsed: {:?}", now.elapsed());
+                    break 'button_press_loop;
+                }
+            }
+            pulse.send(&mut module_map, &destination_map, &mut pulse_queue);
+        }
+    }
+}
 
 fn parse(input: &Vec<String>) -> Input {
     let mut module_map = HashMap::new();
@@ -273,11 +244,10 @@ fn parse(input: &Vec<String>) -> Input {
 
     (module_map, destination_map)
 }
-
 fn main() {
     let input = input();
     let input = parse(&input);
 
     one(&input);
-    // two(&input);
+    two(&input);
 }

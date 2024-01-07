@@ -89,3 +89,26 @@ where
         println!()
     }
 }
+
+// Could use libraries but this is easy enough.
+// https://rosettacode.org/wiki/Least_common_multiple
+pub fn gcd(a: usize, b: usize) -> usize {
+    use std::cmp::{max, min};
+
+    match ((a, b), (a & 1, b & 1)) {
+        ((x, y), _) if x == y => y,
+        ((0, x), _) | ((x, 0), _) => x,
+        ((x, y), (0, 1)) | ((y, x), (1, 0)) => gcd(x >> 1, y),
+        ((x, y), (0, 0)) => gcd(x >> 1, y >> 1) << 1,
+        ((x, y), (1, 1)) => {
+            let (x, y) = (min(x, y), max(x, y));
+            gcd((y - x) >> 1, x)
+        }
+        _ => unreachable!(),
+    }
+}
+
+// https://rosettacode.org/wiki/Least_common_multiple
+pub fn lcm(a: usize, b: usize) -> usize {
+    a * b / gcd(a, b)
+}

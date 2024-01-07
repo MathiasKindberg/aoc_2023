@@ -130,38 +130,13 @@ fn two(input: &[String]) {
             let steps_to_z = steps_to_z.expect("To found steps to all nodes");
             match lcm_acc {
                 None => lcm_acc = Some(steps_to_z),
-                Some(curr_lcm) => lcm_acc = Some(lcm(curr_lcm, steps_to_z)),
+                Some(curr_lcm) => lcm_acc = Some(aoc_lib::lcm(curr_lcm, steps_to_z)),
             }
             lcm_acc
         })
         .unwrap();
 
-    dbg!(&lcm);
-
     println!("Two: {lcm} | Elapsed: {:?}", now.elapsed());
-}
-
-// Could use libraries but this is easy enough.
-// https://rosettacode.org/wiki/Least_common_multiple
-fn gcd(a: usize, b: usize) -> usize {
-    use std::cmp::{max, min};
-
-    match ((a, b), (a & 1, b & 1)) {
-        ((x, y), _) if x == y => y,
-        ((0, x), _) | ((x, 0), _) => x,
-        ((x, y), (0, 1)) | ((y, x), (1, 0)) => gcd(x >> 1, y),
-        ((x, y), (0, 0)) => gcd(x >> 1, y >> 1) << 1,
-        ((x, y), (1, 1)) => {
-            let (x, y) = (min(x, y), max(x, y));
-            gcd((y - x) >> 1, x)
-        }
-        _ => unreachable!(),
-    }
-}
-
-// https://rosettacode.org/wiki/Least_common_multiple
-fn lcm(a: usize, b: usize) -> usize {
-    a * b / gcd(a, b)
 }
 
 fn main() {
