@@ -26,7 +26,21 @@ fn one(input: &Input) {
     let now = std::time::Instant::now();
     let sum = 0;
 
-    aoc_lib::print_2d(&input);
+    aoc_lib::print_2d(input);
+
+    let starting_position = input
+        .iter()
+        .enumerate()
+        .filter_map(|(row_idx, row)| {
+            row.iter()
+                .enumerate()
+                .find(|(_, &tile)| tile == Tile::StartingPosition)
+                .map(|(col_idx, _)| (col_idx, row_idx))
+        })
+        .next()
+        .unwrap();
+
+    dbg!(&starting_position);
 
     println!("One: {sum} | Elapsed: {:?}", now.elapsed());
 }
@@ -37,7 +51,7 @@ fn two(_input: &Input) {
     println!("Two: {sum} | Elapsed: {:?}", now.elapsed());
 }
 
-fn parse(input: &Vec<String>) -> Input {
+fn parse(input: &[String]) -> Input {
     input
         .iter()
         .map(|row| {
@@ -55,7 +69,7 @@ fn parse(input: &Vec<String>) -> Input {
 
 fn main() {
     let stdin = std::io::stdin();
-    let input = stdin.lock().lines().map_while(Result::ok).collect();
+    let input: Vec<_> = stdin.lock().lines().map_while(Result::ok).collect();
 
     let input = parse(&input);
     one(&input);

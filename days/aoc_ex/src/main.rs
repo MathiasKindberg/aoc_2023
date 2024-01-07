@@ -18,7 +18,7 @@ fn two(_input: &Input) {
     println!("Two: {sum} | Elapsed: {:?}", now.elapsed());
 }
 
-fn parse(input: &Vec<String>) -> Input {
+fn parse(input: &[String]) -> Input {
     input.iter().map(|row| row.to_owned()).collect()
 }
 
