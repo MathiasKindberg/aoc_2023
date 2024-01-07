@@ -1,4 +1,4 @@
- %qx -> gz
+%qx -> gz
 %tr -> rm
 %qr -> kx, jm
 %gj -> tx, rj

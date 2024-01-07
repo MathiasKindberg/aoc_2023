@@ -1,5 +1,8 @@
 //! Part 1:
 //! Part 2:
+//!
+//! To make it more efficient:
+//! 1. Stop using owned values.
 
 use std::{
     collections::{HashMap, VecDeque},
@@ -49,7 +52,7 @@ fn input() -> Input {
                     }),
                 )
             } else {
-                unreachable!("Unknown module type")
+                unreachable!("Unknown module type: {identifier} from: {row}")
             }
         })
         .collect()
@@ -62,7 +65,16 @@ struct Signal {
     to: String,
 }
 
-#[derive(Debug, Clone, Copy)]
+impl std::fmt::Display for Signal {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self.strength {
+            PulseStrength::High => write!(f, "{} -high-> {}", self.from, self.to),
+            PulseStrength::Low => write!(f, "{} -low-> {}", self.from, self.to),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum PulseStrength {
     High,
     Low,
@@ -75,12 +87,21 @@ enum Module {
     Conjunction(Conjunction),
 }
 
+// Enum dispatch or a trait would be nicer but yeah, this is AoC.
 impl Module {
     fn pulse(&mut self, signal: Signal) -> SignalQueue {
         match self {
             Module::Broadcaster(v) => v.pulse(signal),
             Module::FlipFlop(v) => v.pulse(signal),
             Module::Conjunction(v) => v.pulse(signal),
+        }
+    }
+
+    fn destination_contains_module(&self, module: &String) -> bool {
+        match self {
+            Module::Broadcaster(v) => v.destinations.contains(module),
+            Module::FlipFlop(v) => v.destinations.contains(module),
+            Module::Conjunction(v) => v.destinations.contains(module),
         }
     }
 }
@@ -112,12 +133,37 @@ struct FlipFlop {
 }
 
 impl FlipFlop {
-    fn pulse(&self, signal: Signal) -> SignalQueue {
-        todo!("Flippy floppy!")
+    fn pulse(&mut self, pulse: Signal) -> SignalQueue {
+        match pulse.strength {
+            // Optimization, return an Option to not have to create an empty queue here.
+            PulseStrength::High => std::collections::VecDeque::new(),
+            PulseStrength::Low => {
+                let strength = match self.state {
+                    // Turn on and send a high pulse
+                    FlipFlopState::Off => {
+                        self.state = FlipFlopState::On;
+                        PulseStrength::High
+                    }
+                    // Turn off and send a low pulse
+                    FlipFlopState::On => {
+                        self.state = FlipFlopState::Off;
+                        PulseStrength::Low
+                    }
+                };
+                self.destinations
+                    .iter()
+                    .map(|destination| Signal {
+                        from: self.name.clone(),
+                        strength,
+                        to: destination.to_owned(),
+                    })
+                    .collect()
+            }
+        }
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 enum FlipFlopState {
     On,
     Off,
@@ -132,52 +178,105 @@ struct Conjunction {
 
 impl Conjunction {
     fn pulse(&mut self, signal: Signal) -> SignalQueue {
-        // Assume state is low if doesn't exist. Otherwise update state.
-        self.input_state.entry(signal.from);
+        self.input_state
+            .entry(signal.from)
+            .and_modify(|strength| *strength = signal.strength);
 
-        todo!("conjunction!")
+        let strength = if self
+            .input_state
+            .values()
+            .all(|strength| strength == &PulseStrength::High)
+        {
+            PulseStrength::Low
+        } else {
+            PulseStrength::High
+        };
+
+        self.destinations
+            .iter()
+            .map(|destination| Signal {
+                from: self.name.clone(),
+                strength,
+                to: destination.to_owned(),
+            })
+            .collect()
     }
 }
 
 fn one(input: &Input) {
     let now = std::time::Instant::now();
-    let sum = 0;
+    let mut low_pulses = 0;
+    let mut high_pulses = 0;
+
     let mut input = input.clone();
 
-    for row in &input {
-        println!("{row:?}");
+    // Connect inputs to conjunction modules.
+    let conjunction_modules: Vec<_> = input
+        .iter()
+        .filter_map(|(key, value)| match value {
+            Module::Conjunction(_) => Some(key.clone()),
+            _ => None,
+        })
+        .collect();
+
+    for conjunction in conjunction_modules {
+        let connected_modules: Vec<_> = input
+            .iter()
+            .filter_map(|(name, module)| {
+                if module.destination_contains_module(&conjunction) {
+                    Some(name.clone())
+                } else {
+                    None
+                }
+            })
+            .collect();
+
+        match input.get_mut(&conjunction).unwrap() {
+            Module::Conjunction(conjunction) => conjunction.input_state.extend(
+                connected_modules
+                    .iter()
+                    .map(|input_module| (input_module.to_owned(), PulseStrength::Low)),
+            ),
+            not_conjunction => unreachable!("Should never happen.... Got: {not_conjunction:?}"),
+        }
     }
 
     // VecDeque since we want to pull pulses from the top and push new ones to the end.
-    let mut pulse_queue: VecDeque<Signal> = input
-        .get_mut("broadcaster")
-        .unwrap()
-        // Start with sending initial signal (later in a loop I think.)
-        .pulse(Signal {
+    let mut pulse_queue: SignalQueue = VecDeque::new();
+    for _ in 1..=1000 {
+        assert!(pulse_queue.is_empty());
+
+        // Button push
+        pulse_queue.push_back(Signal {
             strength: PulseStrength::Low,
             from: String::from("button"),
             to: String::from("broadcaster"),
         });
 
-    println!("\n\nPulse queue: {pulse_queue:?}");
+        while let Some(pulse) = pulse_queue.pop_front() {
+            // println!("{pulse}");
+            match pulse.strength {
+                PulseStrength::High => high_pulses += 1,
+                PulseStrength::Low => low_pulses += 1,
+            }
 
-    while let Some(pulse) = pulse_queue.pop_front() {
-        println!("\n----------------\n{pulse:?}");
+            if let Some(module) = input.get_mut(&pulse.to) {
+                let mut resulting_pulses = module.pulse(pulse);
+                pulse_queue.append(&mut resulting_pulses);
+            }
 
-        let resulting_pulses = input.get_mut(&pulse.to).unwrap().pulse(pulse);
-        // pulse_queue.append(&mut result);
-        println!("{resulting_pulses:?}");
-        println!("Pulse queue: {pulse_queue:?}");
+            // Pulses are always processed in the order they are
+            // sent. So, if a pulse is sent to modules a, b, and c,
+            // and then module a processes its pulse and sends more
+            // pulses, the pulses sent to modules b and c would
+            // have to be handled first.
 
-        // Pulses are always processed in the order they are
-        // sent. So, if a pulse is sent to modules a, b, and c,
-        // and then module a processes its pulse and sends more
-        // pulses, the pulses sent to modules b and c would
-        // have to be handled first.
-
-        // I.e. breadth first.
+            // I.e. breadth first.
+        }
+        // println!("------- Button push: {idx} High pulses: {high_pulses}: Low pulses: {low_pulses} -------\n")
     }
 
+    let sum = high_pulses * low_pulses;
     println!("One: {sum} | Elapsed: {:?}", now.elapsed());
 }
 
