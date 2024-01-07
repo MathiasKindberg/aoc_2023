@@ -22,9 +22,11 @@ impl std::fmt::Display for Tile {
     }
 }
 
-fn one(_input: &Input) {
+fn one(input: &Input) {
     let now = std::time::Instant::now();
     let sum = 0;
+
+    aoc_lib::print_2d(&input);
 
     println!("One: {sum} | Elapsed: {:?}", now.elapsed());
 }

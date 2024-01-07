@@ -84,6 +84,18 @@ where
 {
     for row in v {
         for c in row {
+            print!("{c}");
+        }
+        println!()
+    }
+}
+
+pub fn print_2d_spacious<T>(v: &[Vec<T>])
+where
+    T: std::fmt::Display,
+{
+    for row in v {
+        for c in row {
             print!("{c} ");
         }
         println!()
