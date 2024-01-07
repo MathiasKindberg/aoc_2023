@@ -1,7 +1,7 @@
 //! Part 1:
 //! Part 2:
 
-use std::io::BufRead;
+use std::{collections::HashSet, io::BufRead, vec};
 
 type Input = Vec<Vec<Tile>>;
 
@@ -23,25 +23,56 @@ impl std::fmt::Display for Tile {
 }
 
 fn one(input: &Input) {
+    // Pad input so we don't have to deal with checking walls when indexing
+    let mut input = aoc_lib::pad_input(input.clone(), Tile::Rock);
+    aoc_lib::print_2d(&input);
     let now = std::time::Instant::now();
-    let sum = 0;
-
-    aoc_lib::print_2d(input);
 
     let starting_position = input
         .iter()
         .enumerate()
-        .filter_map(|(row_idx, row)| {
+        .find_map(|(row_idx, row)| {
             row.iter()
                 .enumerate()
                 .find(|(_, &tile)| tile == Tile::StartingPosition)
                 .map(|(col_idx, _)| (col_idx, row_idx))
         })
-        .next()
         .unwrap();
 
-    dbg!(&starting_position);
+    // Turn the starting position into a regular tile so we don't have to deal
+    // with the special case when stepping around the grid.
+    input[starting_position.0][starting_position.1] = Tile::GardenPlot;
 
+    // All current positions.
+    let mut positions: HashSet<(usize, usize)> = HashSet::from_iter(vec![starting_position]);
+
+    // All possible next positions. Gets swapped into the positions when
+    // a step is done.
+    let mut next_positions: HashSet<(usize, usize)> = HashSet::new();
+
+    for _ in 1..=64 {
+        for (row, col) in positions.drain() {
+            const POSSIBLE_STEPS: &[(isize, isize)] = &[
+                (0, 1),  // Right
+                (0, -1), // Left
+                (-1, 0), // Up
+                (1, 0),  // Down
+            ];
+            for (row_step, col_step) in POSSIBLE_STEPS {
+                let row = (row as isize + row_step) as usize;
+                let col = (col as isize + col_step) as usize;
+                if input[row][col] == Tile::GardenPlot {
+                    next_positions.insert((row, col));
+                }
+            }
+        }
+
+        assert!(positions.is_empty());
+        positions.extend(next_positions.drain());
+        assert!(next_positions.is_empty());
+    }
+
+    let sum = positions.len();
     println!("One: {sum} | Elapsed: {:?}", now.elapsed());
 }
 fn two(_input: &Input) {
